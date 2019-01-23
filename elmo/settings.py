@@ -1,0 +1,6 @@
+from os import getenv
+
+
+AUTH_ENDPOINT = getenv("ALERTING_ENDPOINT")
+USERNAME = getenv("ALERTING_USERNAME")
+PASSWORD = getenv("ALERTING_PASSWORD")
