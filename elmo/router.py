@@ -2,6 +2,7 @@ class Router(object):
     """API router class that holds a list of endpoints
     grouped by action type.
     """
+
     def __init__(self, base_url, vendor):
         self._vendor = vendor
         self._base_url = base_url
