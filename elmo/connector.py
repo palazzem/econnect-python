@@ -12,6 +12,7 @@ class AlertingClient(object):
         * `disable` to deactivate the alerting system
         * `enable` to activate the alerting system
     """
+
     def __init__(self):
         # Connector Session must be preserved when operating the system
         self._router = Router(settings.BASE_URL, settings.VENDOR)
@@ -24,24 +25,16 @@ class AlertingClient(object):
         """
         # Access to the system
         # TODO: Split connect from retrieve Session ID
-        payload = {
-            'UserName': username,
-            'Password': password,
-            'RememberMe': False,
-        }
+        payload = {"UserName": username, "Password": password, "RememberMe": False}
         # Parse the Authentication page to retrieve the Session ID
         resp = self._session.post(self._router.auth, data=payload)
-        start = resp.text.find("var sessionId = \'") + 17
+        start = resp.text.find("var sessionId = '") + 17
         end = start + 36
         # TODO: validate Session ID
         self._session_id = resp.text[start:end]
 
         # Set the current session as active
-        payload = {
-            'userId': 1,
-            'password': code,
-            'sessionId': self._session_id,
-        }
+        payload = {"userId": 1, "password": code, "sessionId": self._session_id}
         # TODO: check if it was a success (i.e. concurrent connect are not allowed)
         self._session.post(self._router.connect, data=payload)
 
@@ -50,9 +43,7 @@ class AlertingClient(object):
         if self._session_id is None:
             return False
 
-        payload = {
-            'sessionId': self._session_id,
-        }
+        payload = {"sessionId": self._session_id}
         self._session.post(self._router.disconnect, data=payload)
 
         # TODO: check if the logout is a success
@@ -64,10 +55,10 @@ class AlertingClient(object):
             return False
 
         payload = {
-            'CommandType': 2,
-            'ElementsClass': 1,
-            'ElementsIndexes': 1,
-            'sessionId': self._session_id,
+            "CommandType": 2,
+            "ElementsClass": 1,
+            "ElementsIndexes": 1,
+            "sessionId": self._session_id,
         }
         self._session.post(self._router.send_command, data=payload)
 
@@ -77,9 +68,9 @@ class AlertingClient(object):
             return False
 
         payload = {
-            'CommandType': 1,
-            'ElementsClass': 1,
-            'ElementsIndexes': 1,
-            'sessionId': self._session_id,
+            "CommandType": 1,
+            "ElementsClass": 1,
+            "ElementsIndexes": 1,
+            "sessionId": self._session_id,
         }
         self._session.post(self._router.send_command, data=payload)

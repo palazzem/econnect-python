@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.7.1
+
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            pip install pipenv
+      - run:
+          name: run tests
+          command: |
+            pipenv run tox
