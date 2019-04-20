@@ -9,8 +9,8 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            pip install pipenv
+            sudo pip install pipenv tox
       - run:
           name: run tests
           command: |
-            pipenv run tox
+            tox
