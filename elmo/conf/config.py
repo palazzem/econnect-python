@@ -1,5 +1,5 @@
 from .options import Option
-from .exceptions import OptionNotAvailable
+from .exceptions import OptionNotAvailable, ValidationError
 
 
 class BaseConfig(object):
@@ -88,5 +88,28 @@ class BaseConfig(object):
         return object.__getattribute__(self, name)
 
     def is_valid(self, raise_exception=True):
-        """TODO: missing implementation"""
-        pass
+        """Run options validators, collecting errors if any.
+
+        Args:
+            raise_exception: If any validator fails, an exception is raised. If not set
+                the method returns the validation result.
+        Raises:
+            ValidationError: If one of the validator fails and ``raise_exception`` is True.
+        Returns:
+            A tuple with the result of the validation and a list of options which
+                validators have failed.
+        """
+        errors = []
+        for name in self._options:
+            option = self._get_option(name)
+            is_valid, failed_validators = option._validate()
+            if not is_valid:
+                errors.append({name: failed_validators})
+
+        is_valid = len(errors) == 0
+        if not is_valid and raise_exception is True:
+            raise ValidationError(
+                "Validators for these options have failed: {}".format(errors)
+            )
+
+        return is_valid, errors

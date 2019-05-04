@@ -1,4 +1,4 @@
-class InvalidConfig(Exception):
+class ValidationError(Exception):
     """The configuration is not valid."""
 
     pass
