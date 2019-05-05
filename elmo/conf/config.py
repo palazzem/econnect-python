@@ -1,5 +1,5 @@
 from .options import Option
-from .exceptions import OptionNotAvailable, ValidationError
+from .exceptions import OptionNotAvailable, ConfigNotValid
 
 
 class BaseConfig(object):
@@ -108,7 +108,7 @@ class BaseConfig(object):
 
         is_valid = len(errors) == 0
         if not is_valid and raise_exception is True:
-            raise ValidationError(
+            raise ConfigNotValid(
                 "Validators for these options have failed: {}".format(errors)
             )
 

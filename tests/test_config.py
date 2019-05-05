@@ -2,7 +2,7 @@ import pytest
 
 from elmo.conf.config import BaseConfig
 from elmo.conf.options import Option
-from elmo.conf.exceptions import OptionNotAvailable, ValidationError
+from elmo.conf.exceptions import OptionNotAvailable, ConfigNotValid
 
 
 def test_config_constructor():
@@ -130,5 +130,5 @@ def test_config_is_not_valid_exception(mocker):
     # Mock config options
     mocker.patch.object(option, "_validate", return_value=(False, ["validator"]))
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ConfigNotValid):
         assert config.is_valid()

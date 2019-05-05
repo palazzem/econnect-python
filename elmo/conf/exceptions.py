@@ -1,5 +1,11 @@
 class ValidationError(Exception):
-    """The configuration is not valid."""
+    """Exception raised when a Validator fails."""
+
+    pass
+
+
+class ConfigNotValid(Exception):
+    """Exception raised when any validator fails for a Config object."""
 
     pass
 
