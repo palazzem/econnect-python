@@ -1,3 +1,7 @@
+from . import validators as v
+from .exceptions import ValidationError
+
+
 class Option(object):
     """Settings option that includes built-in validation."""
 
@@ -7,12 +11,17 @@ class Option(object):
         """
         self.value = default if default else None
         self.default = default
-        self.allow_null = allow_null
 
         if validators is not None:
             self.validators = list(validators)
         else:
             self.validators = []
+
+        # Some validators are available via kwarg because they're common
+        # and generic enough. If a validator is too specific, it must
+        # be added in the ``validators`` module.
+        if allow_null is False:
+            self.validators.append(v.not_null)
 
     def _validate(self):
         """Validate this Option based on attributes and validators.
@@ -21,12 +30,14 @@ class Option(object):
             A boolean that is True if the option honors all validators, False otherwise.
         """
         failed_validators = []
-        if self.allow_null is False and self.value is None:
-            failed_validators.append("allow_null")
 
         for validator in self.validators:
-            if validator(self.value) is False:
-                failed_validators.append(validator.__name__)
+            # Validators must raise a ValidationError. Exception message
+            # is used to bubble up the failure reason.
+            try:
+                validator(self.value)
+            except ValidationError as e:
+                failed_validators.append({validator.__name__: "{}".format(e)})
 
         is_valid = len(failed_validators) == 0
         return is_valid, failed_validators
