@@ -1,5 +1,7 @@
 from .base import BaseSettings
 from .options import Option
+from .settings import Settings
 
 
-__all__ = [BaseSettings, Option]
+settings = Settings()
+__all__ = [BaseSettings, Option, settings]
