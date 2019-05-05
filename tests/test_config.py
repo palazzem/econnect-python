@@ -1,6 +1,6 @@
 import pytest
 
-from elmo.conf.config import BaseConfig
+from elmo.conf.base import BaseSettings
 from elmo.conf.options import Option
 from elmo.conf.exceptions import OptionNotAvailable, ConfigNotValid
 
@@ -8,22 +8,22 @@ from elmo.conf.exceptions import OptionNotAvailable, ConfigNotValid
 def test_config_constructor():
     """Should contain options registry only for attributes of type Option"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         home = Option()
         url = Option()
         objects = []
 
-    config = ConfigTest()
+    config = SettingsTest()
     assert config._options == ["home", "url"]
 
 
 def test_config_set_value():
     """Should set the underlying Option value"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         home = Option()
 
-    config = ConfigTest()
+    config = SettingsTest()
     config.home = "test"
     option = config._get_option("home")
     assert option.value == "test"
@@ -32,10 +32,10 @@ def test_config_set_value():
 def test_config_get_value():
     """Should get the underlying Option value"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         home = Option()
 
-    config = ConfigTest()
+    config = SettingsTest()
     option = config._get_option("home")
     option.value = "test"
     assert config.home == "test"
@@ -44,10 +44,10 @@ def test_config_get_value():
 def test_config_set_value_not_available():
     """Should raise an exception if the option is not present"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         pass
 
-    config = ConfigTest()
+    config = SettingsTest()
     with pytest.raises(OptionNotAvailable):
         config.test = "test"
 
@@ -55,10 +55,10 @@ def test_config_set_value_not_available():
 def test_config_get_value_not_available():
     """Should raise an exception if the option is not present"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         pass
 
-    config = ConfigTest()
+    config = SettingsTest()
     with pytest.raises(OptionNotAvailable):
         config.test
 
@@ -66,11 +66,11 @@ def test_config_get_value_not_available():
 def test_config_is_valid_all_options(mocker):
     """Should validate all Option attributes"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         option1 = Option()
         option2 = Option()
 
-    config = ConfigTest()
+    config = SettingsTest()
     option1 = config._get_option("option1")
     option2 = config._get_option("option2")
 
@@ -86,10 +86,10 @@ def test_config_is_valid_all_options(mocker):
 def test_config_is_valid(mocker):
     """Should return a success if the configuration is valid"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         home = Option()
 
-    config = ConfigTest()
+    config = SettingsTest()
     option = config._get_option("home")
 
     # Mock config options
@@ -101,10 +101,10 @@ def test_config_is_valid(mocker):
 def test_config_is_not_valid(mocker):
     """Should return a failure if the configuration is not valid and raise_exception is False"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         home = Option()
 
-    config = ConfigTest()
+    config = SettingsTest()
     option = config._get_option("home")
 
     # Mock config options
@@ -121,10 +121,10 @@ def test_config_is_not_valid(mocker):
 def test_config_is_not_valid_exception(mocker):
     """Should raise an exception if the configuration is not valid and raise_exception is True"""
 
-    class ConfigTest(BaseConfig):
+    class SettingsTest(BaseSettings):
         home = Option()
 
-    config = ConfigTest()
+    config = SettingsTest()
     option = config._get_option("home")
 
     # Mock config options

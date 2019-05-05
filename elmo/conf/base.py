@@ -2,14 +2,14 @@ from .options import Option
 from .exceptions import OptionNotAvailable, ConfigNotValid
 
 
-class BaseConfig(object):
+class BaseSettings(object):
     """Configuration base class that must be extended to define application settings.
     Every setting must be of type ``Option`` otherwise it's not taken in consideration
     during the validation process.
 
     Example:
 
-        class Settings(BaseConfig):
+        class Settings(BaseSettings):
             url = Option()
             dry_run = Option(validators=[is_a_boolean])
 
