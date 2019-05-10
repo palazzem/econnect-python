@@ -1,8 +1,8 @@
 import os
 
-from .conf import validators
-from .conf.base import BaseSettings
-from .conf.options import Option
+from .settings import validators
+from .settings.base import BaseSettings
+from .settings.options import Option
 
 
 class Settings(BaseSettings):
@@ -18,3 +18,6 @@ class Settings(BaseSettings):
         validators=[validators.is_https_url],
     )
     vendor = Option(default=os.getenv("ELMO_VENDOR"), allow_null=False)
+
+
+settings = Settings()

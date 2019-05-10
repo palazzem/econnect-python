@@ -1,7 +1,7 @@
 import pytest
 
-from elmo.conf.exceptions import ValidationError
-from elmo.conf.validators import not_null, is_https_url
+from elmo.settings.exceptions import ValidationError
+from elmo.settings.validators import not_null, is_https_url
 
 
 def test_not_null_boolean():
