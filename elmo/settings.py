@@ -1,8 +1,8 @@
 import os
 
-from . import validators
-from .base import BaseSettings
-from .options import Option
+from .conf import validators
+from .conf.base import BaseSettings
+from .conf.options import Option
 
 
 class Settings(BaseSettings):
