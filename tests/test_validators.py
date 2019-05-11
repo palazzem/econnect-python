@@ -50,6 +50,12 @@ def test_url_with_path():
         is_https_url("/example.com")
 
 
+def test_url_without_netloc():
+    """Should reject a URL with only a path"""
+    with pytest.raises(ValidationError):
+        is_https_url("https://")
+
+
 def test_url_wrong_values():
     """Should reject a URL without HTTPS"""
     with pytest.raises(ValidationError):
