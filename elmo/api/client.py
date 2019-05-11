@@ -1,7 +1,7 @@
 from requests import Session
 
 from .router import Router
-from .exceptions import AuthenticationFailed, PermissionDenied
+from .exceptions import PermissionDenied
 
 from ..conf import settings
 from ..utils import parser
