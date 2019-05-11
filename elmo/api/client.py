@@ -1,8 +1,10 @@
 from requests import Session
 
 from .router import Router
+from .exceptions import AuthenticationFailed
 
 from ..conf import settings
+from ..utils import parser
 
 
 class ElmoClient(object):
@@ -29,6 +31,22 @@ class ElmoClient(object):
         self._router = Router(settings.base_url, settings.vendor)
         self._session = Session()
         self._session_id = None
+
+    def auth(self, username, password):
+        """Authenticate the client and retrieves the access token.
+
+        Args:
+            username: the Username used for the authentication
+            password: the Password used for the authentication
+        Raises:
+            AuthenticationFailed: if wrong credentials are used
+        """
+        payload = {"UserName": username, "Password": password, "RememberMe": False}
+        response = self._session.post(self._router.auth, data=payload)
+        self._session_id = parser.get_access_token(response.text)
+
+        if self._session_id is None:
+            raise AuthenticationFailed("Invalid credentials")
 
     def connect(self, username, password, code):
         """Uses credentials to gain a login token via Cookies
