@@ -31,6 +31,38 @@ def mock_client(monkeypatch):
                 # Wrong credentials. Status Code is still 200 (API behavior)
                 response.status_code = 200
                 response._content = b""
+        if endpoint == client._router.lock:
+            if data.get("password") == data.get("sessionId") == "test":
+                # Correct credentials
+                response.status_code = 200
+                response._context = b"""[
+                    {
+                        "Poller": {"Poller": 1, "Panel": 1},
+                        "CommandId": 5,
+                        "Successful": True,
+                    }
+                ]"""
+            elif data.get("password") is None:
+                # Missing session ID
+                response.status_code = 401
+                response._context = b"""[
+                    {
+                        "Poller": {"Poller": 1, "Panel": 1},
+                        "CommandId": 5,
+                        "Successful": False,
+                    }
+                ]"""
+            else:
+                # Wrong credentials
+                response.status_code = 403
+                response._context = b"""[
+                    {
+                        "Poller": {"Poller": 1, "Panel": 1},
+                        "CommandId": 5,
+                        "Successful": False,
+                    }
+                ]"""
+
         return response
 
     monkeypatch.setattr(client._session, "post", mockresponse)

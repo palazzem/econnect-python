@@ -1,7 +1,11 @@
+from threading import Lock
+from contextlib import contextmanager
+
 from requests import Session
 
 from .router import Router
 from .exceptions import PermissionDenied
+from .decorators import require_session
 
 from ..conf import settings
 from ..utils import parser
@@ -31,6 +35,7 @@ class ElmoClient(object):
         self._router = Router(settings.base_url, settings.vendor)
         self._session = Session()
         self._session_id = None
+        self._lock = Lock()
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token.
@@ -48,26 +53,30 @@ class ElmoClient(object):
         if self._session_id is None:
             raise PermissionDenied("You do not have permission to perform this action.")
 
-    def connect(self, username, password, code):
-        """Uses credentials to gain a login token via Cookies
-        and then unlock the system with the given code.
+    @contextmanager
+    @require_session
+    def lock(self, code):
+        """Context manager to obtain a system lock. The alerting system allows
+        only one user at a time and obtaining the lock is mandatory. When the
+        context manager is closed, the lock is automatically released.
+
+        Args:
+            code: the private access code to obtain the lock.
+        Returns:
+            A client instance with an acquired lock.
         """
-        # Access to the system
-        # TODO: Split connect from retrieve Session ID
-        payload = {"UserName": username, "Password": password, "RememberMe": False}
-        # Parse the Authentication page to retrieve the Session ID
-        resp = self._session.post(self._router.auth, data=payload)
-        start = resp.text.find("var sessionId = '") + 17
-        end = start + 36
-        # TODO: validate Session ID
-        self._session_id = resp.text[start:end]
-
-        # Set the current session as active
         payload = {"userId": 1, "password": code, "sessionId": self._session_id}
-        # TODO: check if it was a success (i.e. concurrent connect are not allowed)
-        self._session.post(self._router.connect, data=payload)
+        response = self._session.post(self._router.lock, data=payload)
+        if response.status_code == 200:
+            self._lock.acquire()
+            yield self
+            self.unlock()
+        elif response.status_code == 403:
+            raise PermissionDenied("You do not have permission to perform this action.")
+        else:
+            raise Exception("Unexpected status code: {}".format(response.status_code))
 
-    def disconnect(self):
+    def unlock(self):
         """Disconnect the system clearing the local cache"""
         if self._session_id is None:
             return False
