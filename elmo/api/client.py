@@ -1,21 +1,32 @@
 from requests import Session
 
-from . import settings
 from .router import Router
 
+from ..conf import settings
 
-class AlertingClient(object):
-    """AlertingClient class provides all the functionalities to connect
-    to an Elmo system. It stores login tokens via `Session` cookies
-    and exposes actions. Available actions are:
-        * `connect` to have credentials to operate with the system
-        * `disable` to deactivate the alerting system
-        * `enable` to activate the alerting system
+
+class ElmoClient(object):
+    """ElmoClient class provides all the functionalities to connect
+    to an Elmo system. During the authentication a short-lived token is stored
+    in the instance and is used to arm/disarm the system.
+
+    Usage:
+        TODO API
+
+    * I need a lock() and unlock()
+    * it could lead to a context manager
+    * Add a decorator to define a function that requires an access token
+    ##
+    c = ElmoClient()
+    c.auth(username, password)
+    with c.lock():
+        c.arm()  # this may have a parameter to define what to arm (None means all)
+        c.disarm()
     """
 
     def __init__(self):
-        # Connector Session must be preserved when operating the system
-        self._router = Router(settings.BASE_URL, settings.VENDOR)
+        # Client session must be preserved when operating the system
+        self._router = Router(settings.base_url, settings.vendor)
         self._session = Session()
         self._session_id = None
 
