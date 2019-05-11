@@ -25,10 +25,11 @@ def is_https_url(value):
         ValidationError: if the Option is not a valid URL with 'https' schema
     """
     url = urlparse(value)
+
     if url.scheme != "https":
         raise ValidationError("The schema must be HTTPS")
 
-    if url.netloc is None:
+    if url.netloc is None or url.netloc == "":
         raise ValidationError("The URL is missing the net location")
 
     return True

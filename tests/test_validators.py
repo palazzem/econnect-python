@@ -1,7 +1,7 @@
 import pytest
 
-from elmo.conf.exceptions import ValidationError
-from elmo.conf.validators import not_null, is_https_url
+from elmo.settings.exceptions import ValidationError
+from elmo.settings.validators import not_null, is_https_url
 
 
 def test_not_null_boolean():
@@ -48,6 +48,12 @@ def test_url_with_path():
     """Should reject a URL with only a path"""
     with pytest.raises(ValidationError):
         is_https_url("/example.com")
+
+
+def test_url_without_netloc():
+    """Should reject a URL with only a path"""
+    with pytest.raises(ValidationError):
+        is_https_url("https://")
 
 
 def test_url_wrong_values():
