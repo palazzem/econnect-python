@@ -1,6 +1,6 @@
 import pytest
 
-from elmo.api.exceptions import InvalidSession
+from elmo.api.exceptions import PermissionDenied
 from elmo.api.decorators import require_session
 
 
@@ -33,5 +33,5 @@ def test_require_session_missing():
             return 42
 
     client = TestClient()
-    with pytest.raises(InvalidSession):
+    with pytest.raises(PermissionDenied):
         client.action()

@@ -1,4 +1,4 @@
-from .exceptions import InvalidSession
+from .exceptions import PermissionDenied
 
 
 def require_session(func):
@@ -13,7 +13,7 @@ def require_session(func):
     def func_wrapper(*args, **kwargs):
         self = args[0]
         if self._session_id is None:
-            raise InvalidSession("Session not available or expired")
+            raise PermissionDenied("You do not have permission to perform this action.")
         else:
             return func(*args, **kwargs)
 

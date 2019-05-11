@@ -1,7 +1,7 @@
 from requests import Session
 
 from .router import Router
-from .exceptions import AuthenticationFailed
+from .exceptions import AuthenticationFailed, PermissionDenied
 
 from ..conf import settings
 from ..utils import parser
@@ -46,7 +46,7 @@ class ElmoClient(object):
         self._session_id = parser.get_access_token(response.text)
 
         if self._session_id is None:
-            raise AuthenticationFailed("Invalid credentials")
+            raise PermissionDenied("You do not have permission to perform this action.")
 
     def connect(self, username, password, code):
         """Uses credentials to gain a login token via Cookies
