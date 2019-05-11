@@ -21,13 +21,15 @@ def mock_client(monkeypatch):
         if endpoint == client._router.auth:
             if data.get("UserName") == data.get("Password") == "test":
                 # Correct credentials
+                response.status_code = 200
                 response._content = b"""<script type="text/javascript">
                   var apiURL = 'https://example.com';
                   var sessionId = '00000000-0000-0000-0000-000000000000';
                   var canElevate = '1';
                 """
             else:
-                # Wrong credentials
+                # Wrong credentials. Status Code is still 200 (API behavior)
+                response.status_code = 200
                 response._content = b""
         return response
 
