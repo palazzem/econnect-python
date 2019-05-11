@@ -11,6 +11,7 @@ tox = "*"
 flake8 = "*"
 elmo = {editable = true,path = "."}
 pytest-mock = "*"
+codecov = "*"
 
 [packages]
 requests = "*"
