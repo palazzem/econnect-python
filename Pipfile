@@ -9,6 +9,8 @@ pytest = "*"
 pytest-cov = "*"
 tox = "*"
 flake8 = "*"
+elmo = {editable = true,path = "."}
+pytest-mock = "*"
 
 [packages]
 requests = "*"
