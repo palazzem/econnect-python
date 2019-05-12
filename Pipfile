@@ -12,6 +12,7 @@ flake8 = "*"
 elmo = {editable = true,path = "."}
 pytest-mock = "*"
 codecov = "*"
+responses = "*"
 
 [packages]
 requests = "*"
