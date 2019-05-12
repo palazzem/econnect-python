@@ -1,7 +1,9 @@
 import pytest
 
-from elmo.api.exceptions import PermissionDenied
-from elmo.api.decorators import require_session
+from threading import Lock
+
+from elmo.api.exceptions import PermissionDenied, LockNotAcquired
+from elmo.api.decorators import require_session, require_lock
 
 
 def test_require_session_present():
@@ -34,4 +36,38 @@ def test_require_session_missing():
 
     client = TestClient()
     with pytest.raises(PermissionDenied):
+        client.action()
+
+
+def test_require_lock():
+    """Should succeed if the lock has been acquired."""
+
+    class TestClient(object):
+        def __init__(self):
+            # Lock attribute
+            self._lock = Lock()
+
+        @require_lock
+        def action(self):
+            return 42
+
+    client = TestClient()
+    client._lock.acquire()
+    assert client.action() == 42
+
+
+def test_require_lock_fails():
+    """Should fail if the lock has not been acquired."""
+
+    class TestClient(object):
+        def __init__(self):
+            # Lock attribute
+            self._lock = Lock()
+
+        @require_lock
+        def action(self):
+            return 42
+
+    client = TestClient()
+    with pytest.raises(LockNotAcquired):
         client.action()
