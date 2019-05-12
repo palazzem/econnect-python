@@ -117,28 +117,62 @@ class ElmoClient(object):
                 "Unexpected status code: {}".format(response.status_code)
             )
 
-    def disable(self):
-        """Deactivate the system"""
-        if self._session_id is None:
-            return False
+    @require_session
+    @require_lock
+    def arm(self):
+        """Arm all system alarms without any activation delay. This API works only
+        if a system lock has been obtained, otherwise the action ends with a failure.
+        Note: API subject to changes when more configurations are allowed, such as
+        enabling only some alerts.
 
-        payload = {
-            "CommandType": 2,
-            "ElementsClass": 1,
-            "ElementsIndexes": 1,
-            "sessionId": self._session_id,
-        }
-        self._session.post(self._router.send_command, data=payload)
-
-    def enable(self):
-        """Activate the system"""
-        if self._session_id is None:
-            return False
-
+        Raises:
+            PermissionDenied: if a wrong access token is used or expired.
+            APIException: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the system has been armed correctly.
+        """
         payload = {
             "CommandType": 1,
             "ElementsClass": 1,
             "ElementsIndexes": 1,
             "sessionId": self._session_id,
         }
-        self._session.post(self._router.send_command, data=payload)
+        response = self._session.post(self._router.send_command, data=payload)
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 403:
+            raise PermissionDenied("You do not have permission to perform this action.")
+        else:
+            raise APIException(
+                "Unexpected status code: {}".format(response.status_code)
+            )
+
+    @require_session
+    @require_lock
+    def disarm(self):
+        """Deactivate all system alarms. This API works only if a system lock has been
+        obtained, otherwise the action ends with a failure.
+        Note: API subject to changes when more configurations are allowed, such as
+        enabling only some alerts.
+
+        Raises:
+            PermissionDenied: if a wrong access token is used or expired.
+            APIException: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the system has been disarmed correctly.
+        """
+        payload = {
+            "CommandType": 2,
+            "ElementsClass": 1,
+            "ElementsIndexes": 1,
+            "sessionId": self._session_id,
+        }
+        response = self._session.post(self._router.send_command, data=payload)
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 403:
+            raise PermissionDenied("You do not have permission to perform this action.")
+        else:
+            raise APIException(
+                "Unexpected status code: {}".format(response.status_code)
+            )

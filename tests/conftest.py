@@ -85,6 +85,29 @@ def mock_client(mocker):
                 # Server Error
                 response.status_code = 500
                 response._context = b"Server error"
+        elif endpoint == client._router.send_command:
+            if data.get("sessionId") == "test":
+                # Correct credentials
+                response.status_code = 200
+                response._context = b"""[
+                    {
+                        "CommandId": 1,
+                        "Successful": True,
+                    }
+                ]"""
+            elif data.get("sessionId") == "test-fail":
+                # Wrong credentials
+                response.status_code = 403
+                response._context = b"""[
+                    {
+                        "CommandId": 1,
+                        "Successful": False,
+                    }
+                ]"""
+            else:
+                # Server Error
+                response.status_code = 500
+                response._context = b"Server error"
 
         return response
 
