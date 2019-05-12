@@ -5,7 +5,7 @@ from requests import Session
 
 from .router import Router
 from .exceptions import PermissionDenied, APIException
-from .decorators import require_session
+from .decorators import require_session, require_lock
 
 from ..conf import settings
 from ..utils import parser
@@ -85,6 +85,7 @@ class ElmoClient(object):
             )
 
     @require_session
+    @require_lock
     def unlock(self):
         """Release the system lock so that other users (or this instance) can
         acquire the lock again. This method requires a valid session ID and if called
@@ -100,12 +101,6 @@ class ElmoClient(object):
         Returns:
             A boolean if the lock has been released correctly.
         """
-        # If the Lock() acquisition succeed it means a locking is not occurring
-        # and so bail-out the execution (and release the lock).
-        if self._lock.acquire(False):
-            self._lock.release()
-            return False
-
         payload = {"sessionId": self._session_id}
         response = self._session.post(self._router.unlock, data=payload)
 

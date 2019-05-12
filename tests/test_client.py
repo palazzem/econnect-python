@@ -1,6 +1,6 @@
 import pytest
 
-from elmo.api.exceptions import PermissionDenied, APIException
+from elmo.api.exceptions import APIException, PermissionDenied, LockNotAcquired
 
 
 def test_client_auth_success(mock_client):
@@ -65,15 +65,16 @@ def test_client_unlock(mock_client):
     assert mock_client._lock.acquire(False)
 
 
-def test_client_unlock_fail_fast(mock_client):
+def test_client_unlock_fails_missing_lock(mock_client):
     """unlock() should fail without calling the endpoint if Lock() has not been acquired."""
     mock_client._session_id = "test"
-    mock_client.unlock()
+    with pytest.raises(LockNotAcquired):
+        mock_client.unlock()
     assert mock_client._session.post.called is False
     assert mock_client._lock.acquire(False)
 
 
-def test_client_unlock_fail_wrong_credentials(mock_client):
+def test_client_unlock_fails_wrong_credentials(mock_client):
     """Should fail if wrong credentials are used."""
     mock_client._session_id = "test-fail"
     mock_client._lock.acquire()
@@ -83,7 +84,7 @@ def test_client_unlock_fail_wrong_credentials(mock_client):
         assert not mock_client._lock.acquire(False)
 
 
-def test_client_unlock_unexpected_error(mock_client):
+def test_client_unlock_fails_unexpected_error(mock_client):
     """Should raise an error and keep the lock if the server has problems."""
     mock_client._session_id = "test-fail"
     mock_client._lock.acquire()
