@@ -80,13 +80,13 @@ def test_client_unlock_fails_wrong_credentials(mock_client):
     mock_client._lock.acquire()
     with pytest.raises(PermissionDenied):
         mock_client.unlock()
-        assert mock_client._session.post.called is True
-        assert not mock_client._lock.acquire(False)
+    assert mock_client._session.post.called is True
+    assert not mock_client._lock.acquire(False)
 
 
 def test_client_unlock_fails_unexpected_error(mock_client):
     """Should raise an error and keep the lock if the server has problems."""
-    mock_client._session_id = "test-fail"
+    mock_client._session_id = "unknown"
     mock_client._lock.acquire()
     with pytest.raises(APIException):
         mock_client.unlock()
