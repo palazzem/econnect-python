@@ -17,21 +17,17 @@ class ElmoClient(object):
     in the instance and is used to arm/disarm the system.
 
     Usage:
-        TODO API
+        # Authenticate to the system (read-only mode)
+        c = ElmoClient()
+        c.auth("username", "password")
 
-    * I need a lock() and unlock()
-    * it could lead to a context manager
-    * Add a decorator to define a function that requires an access token
-    ##
-    c = ElmoClient()
-    c.auth(username, password)
-    with c.lock():
-        c.arm()  # this may have a parameter to define what to arm (None means all)
-        c.disarm()
+        # Obtain a lock to do actions on the system (write mode)
+        with c.lock("alarm_code"):
+            c.arm()     # Arms all alarms
+            c.disarm()  # Disarm all alarms
     """
 
     def __init__(self):
-        # Client session must be preserved when operating the system
         self._router = Router(settings.base_url, settings.vendor)
         self._session = Session()
         self._session_id = None
@@ -41,11 +37,11 @@ class ElmoClient(object):
         """Authenticate the client and retrieves the access token.
 
         Args:
-            username: the Username used for the authentication
-            password: the Password used for the authentication
+            username: the Username used for the authentication.
+            password: the Password used for the authentication.
         Raises:
-            PermissionDenied: if wrong credentials are used
-            APIException: if there is an error raised by the API (not 2xx response)
+            PermissionDenied: if wrong credentials are used.
+            APIException: if there is an error raised by the API (not 2xx response).
         """
         payload = {"UserName": username, "Password": password, "RememberMe": False}
         response = self._session.post(self._router.auth, data=payload)
@@ -67,7 +63,10 @@ class ElmoClient(object):
         context manager is closed, the lock is automatically released.
 
         Args:
-            code: the private access code to obtain the lock.
+            code: the alarm code used to obtain the lock.
+        Raises:
+            PermissionDenied: if a wrong access token is used or expired.
+            APIException: if there is an error raised by the API (not 2xx response).
         Returns:
             A client instance with an acquired lock.
         """
@@ -87,7 +86,7 @@ class ElmoClient(object):
     @require_session
     @require_lock
     def unlock(self):
-        """Release the system lock so that other users (or this instance) can
+        """Release the system lock so that other threads (or this instance) can
         acquire the lock again. This method requires a valid session ID and if called
         when a Lock() is not acquired it bails out.
 
