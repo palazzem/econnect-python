@@ -16,7 +16,7 @@ class Router(object):
         return "{}/api/panel/syncLogin".format(self._base_url)
 
     @property
-    def disconnect(self):
+    def unlock(self):
         return "{}/api/panel/syncLogout".format(self._base_url)
 
     @property

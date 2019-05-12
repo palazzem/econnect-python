@@ -27,10 +27,14 @@ def mock_client(mocker):
                   var sessionId = '00000000-0000-0000-0000-000000000000';
                   var canElevate = '1';
                 """
-            else:
+            elif data.get("UserName") == data.get("Password") == "test-fail":
                 # Wrong credentials. Status Code is still 200 (API behavior)
                 response.status_code = 200
                 response._content = b""
+            else:
+                # Server Error
+                response.status_code = 500
+                response._context = b"Server error"
         elif endpoint == client._router.lock:
             if data.get("password") == data.get("sessionId") == "test":
                 # Correct credentials
@@ -42,17 +46,7 @@ def mock_client(mocker):
                         "Successful": True,
                     }
                 ]"""
-            elif data.get("password") is None:
-                # Missing session ID
-                response.status_code = 401
-                response._context = b"""[
-                    {
-                        "Poller": {"Poller": 1, "Panel": 1},
-                        "CommandId": 5,
-                        "Successful": False,
-                    }
-                ]"""
-            else:
+            elif data.get("password") == data.get("sessionId") == "test-fail":
                 # Wrong credentials
                 response.status_code = 403
                 response._context = b"""[
@@ -62,6 +56,35 @@ def mock_client(mocker):
                         "Successful": False,
                     }
                 ]"""
+            else:
+                # Server Error
+                response.status_code = 500
+                response._context = b"Server error"
+        elif endpoint == client._router.unlock:
+            if data.get("sessionId") == "test":
+                # Correct credentials
+                response.status_code = 200
+                response._context = b"""[
+                    {
+                        "Poller": {"Poller": 1, "Panel": 1},
+                        "CommandId": 5,
+                        "Successful": True,
+                    }
+                ]"""
+            elif data.get("sessionId") == "test-fail":
+                # Wrong credentials
+                response.status_code = 403
+                response._context = b"""[
+                    {
+                        "Poller": {"Poller": 1, "Panel": 1},
+                        "CommandId": 5,
+                        "Successful": False,
+                    }
+                ]"""
+            else:
+                # Server Error
+                response.status_code = 500
+                response._context = b"Server error"
 
         return response
 
