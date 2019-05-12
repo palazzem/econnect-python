@@ -54,3 +54,40 @@ def test_client_lock_calls_unlock(mock_client, mocker):
     with mock_client.lock("test"):
         pass
     assert mock_client.unlock.called is True
+
+
+def test_client_unlock(mock_client):
+    """Should call the API and release the system lock."""
+    mock_client._session_id = "test"
+    mock_client._lock.acquire()
+    assert mock_client.unlock() is True
+    assert mock_client._session.post.called is True
+    assert mock_client._lock.acquire(False)
+
+
+def test_client_unlock_fail_fast(mock_client):
+    """unlock() should fail without calling the endpoint if Lock() has not been acquired."""
+    mock_client._session_id = "test"
+    mock_client.unlock()
+    assert mock_client._session.post.called is False
+    assert mock_client._lock.acquire(False)
+
+
+def test_client_unlock_fail_wrong_credentials(mock_client):
+    """Should fail if wrong credentials are used."""
+    mock_client._session_id = "test-fail"
+    mock_client._lock.acquire()
+    with pytest.raises(PermissionDenied):
+        mock_client.unlock()
+        assert mock_client._session.post.called is True
+        assert not mock_client._lock.acquire(False)
+
+
+def test_client_unlock_unexpected_error(mock_client):
+    """Should raise an error and keep the lock if the server has problems."""
+    mock_client._session_id = "test-fail"
+    mock_client._lock.acquire()
+    with pytest.raises(APIException):
+        mock_client.unlock()
+        assert mock_client._session.post.called is True
+        assert not mock_client._lock.acquire(False)

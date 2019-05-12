@@ -84,16 +84,43 @@ class ElmoClient(object):
                 "Unexpected status code: {}".format(response.status_code)
             )
 
+    @require_session
     def unlock(self):
-        """Disconnect the system clearing the local cache"""
-        if self._session_id is None:
+        """Release the system lock so that other users (or this instance) can
+        acquire the lock again. This method requires a valid session ID and if called
+        when a Lock() is not acquired it bails out.
+
+        If there is a server error or if the call fails, the lock is not released
+        so the current thread can do further work before letting another thread
+        gain the lock.
+
+        Raises:
+            PermissionDenied: if a wrong access token is used or expired.
+            APIException: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the lock has been released correctly.
+        """
+        # If the Lock() acquisition succeed it means a locking is not occurring
+        # and so bail-out the execution (and release the lock).
+        if self._lock.acquire(False):
+            self._lock.release()
             return False
 
         payload = {"sessionId": self._session_id}
-        self._session.post(self._router.disconnect, data=payload)
+        response = self._session.post(self._router.unlock, data=payload)
 
-        # TODO: check if the logout is a success
-        self._session_id = None
+        # Release the lock only in case of success, so that if it fails
+        # the owner of the lock can properly unlock the system again
+        # (maybe with a retry)
+        if response.status_code == 200:
+            self._lock.release()
+            return True
+        elif response.status_code == 403:
+            raise PermissionDenied("You do not have permission to perform this action.")
+        else:
+            raise APIException(
+                "Unexpected status code: {}".format(response.status_code)
+            )
 
     def disable(self):
         """Deactivate the system"""
