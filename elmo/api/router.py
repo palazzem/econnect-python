@@ -12,11 +12,11 @@ class Router(object):
         return "{}/{}".format(self._base_url, self._vendor)
 
     @property
-    def connect(self):
+    def lock(self):
         return "{}/api/panel/syncLogin".format(self._base_url)
 
     @property
-    def disconnect(self):
+    def unlock(self):
         return "{}/api/panel/syncLogout".format(self._base_url)
 
     @property
