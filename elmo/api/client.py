@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from requests import Session
 
 from .router import Router
-from .exceptions import PermissionDenied
+from .exceptions import PermissionDenied, APIException
 from .decorators import require_session
 
 from ..conf import settings
@@ -44,11 +44,17 @@ class ElmoClient(object):
             username: the Username used for the authentication
             password: the Password used for the authentication
         Raises:
-            AuthenticationFailed: if wrong credentials are used
+            PermissionDenied: if wrong credentials are used
+            APIException: if there is an error raised by the API (not 2xx response)
         """
         payload = {"UserName": username, "Password": password, "RememberMe": False}
         response = self._session.post(self._router.auth, data=payload)
-        self._session_id = parser.get_access_token(response.text)
+        if response.status_code == 200:
+            self._session_id = parser.get_access_token(response.text)
+        else:
+            raise APIException(
+                "Unexpected status code: {}".format(response.status_code)
+            )
 
         if self._session_id is None:
             raise PermissionDenied("You do not have permission to perform this action.")
@@ -74,7 +80,9 @@ class ElmoClient(object):
         elif response.status_code == 403:
             raise PermissionDenied("You do not have permission to perform this action.")
         else:
-            raise Exception("Unexpected status code: {}".format(response.status_code))
+            raise APIException(
+                "Unexpected status code: {}".format(response.status_code)
+            )
 
     def unlock(self):
         """Disconnect the system clearing the local cache"""
