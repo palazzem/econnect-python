@@ -6,7 +6,7 @@ from elmo.api.client import ElmoClient
 
 
 @pytest.fixture
-def mock_client(monkeypatch):
+def mock_client(mocker):
     """Create an ElmoClient that mocks external calls based on the values
     defined by the internal router. The mock tests the client internal logic
     (i.e. retrieving an access token), but it doesn't take in account the
@@ -31,7 +31,7 @@ def mock_client(monkeypatch):
                 # Wrong credentials. Status Code is still 200 (API behavior)
                 response.status_code = 200
                 response._content = b""
-        if endpoint == client._router.lock:
+        elif endpoint == client._router.lock:
             if data.get("password") == data.get("sessionId") == "test":
                 # Correct credentials
                 response.status_code = 200
@@ -65,5 +65,5 @@ def mock_client(monkeypatch):
 
         return response
 
-    monkeypatch.setattr(client._session, "post", mockresponse)
+    mocker.patch.object(client._session, "post", side_effect=mockresponse)
     yield client
