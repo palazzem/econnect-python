@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "elmo-alerting"
+name = "elmo"
 version = "0.1.0"
 description = "API adapter used to control programmatically an Elmo alarm system."
 authors = ["Emanuele Palazzetti <hello@palazzetti.me>"]
