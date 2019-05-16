@@ -14,7 +14,7 @@ def test_config_constructor():
         objects = []
 
     config = SettingsTest()
-    assert config._options == ["home", "url"]
+    assert sorted(config._options) == ["home", "url"]
 
 
 def test_config_set_value():
