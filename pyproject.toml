@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "elmo-alerting"
+version = "0.1.0"
+description = "API adapter used to control programmatically an Elmo alarm system."
+authors = ["Emanuele Palazzetti <hello@palazzetti.me>"]
+license = "BSD-3-Clause"
+
+[tool.poetry.dependencies]
+python = "^3.4"
+requests = { version = "^2.21", extras = [ "security" ] }
+
+[tool.poetry.dev-dependencies]
+pytest = "^4.5"
+pytest-cov = "^2.7"
+tox = "^3.10"
+flake8 = "^3.7"
+pytest-mock = "^1.10"
+codecov = "^2.0"
+responses = "^0.10.6"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
