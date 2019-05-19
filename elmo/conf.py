@@ -18,6 +18,3 @@ class Settings(BaseSettings):
         validators=[validators.is_https_url],
     )
     vendor = Option(default=os.getenv("ELMO_VENDOR"), allow_null=False)
-
-
-settings = Settings()

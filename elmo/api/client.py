@@ -7,7 +7,6 @@ from .router import Router
 from .exceptions import PermissionDenied, APIException
 from .decorators import require_session, require_lock
 
-from ..conf import settings
 from ..utils import parser
 
 
@@ -27,8 +26,8 @@ class ElmoClient(object):
             c.disarm()  # Disarm all alarms
     """
 
-    def __init__(self):
-        self._router = Router(settings.base_url, settings.vendor)
+    def __init__(self, base_url, vendor):
+        self._router = Router(base_url, vendor)
         self._session = Session()
         self._session_id = None
         self._lock = Lock()
