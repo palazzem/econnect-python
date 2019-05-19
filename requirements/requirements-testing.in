@@ -1,0 +1,6 @@
+codecov
+pytest
+pytest-cov
+pytest-mock
+responses
+tox
