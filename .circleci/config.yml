@@ -8,7 +8,7 @@ commands:
     steps:
       # Install test dependencies and parametrize tox execution
       - checkout
-      - run: sudo pip install poetry tox codecov
+      - run: sudo pip install tox codecov
       - run: tox -e << parameters.env >> && codecov
 
 jobs:
