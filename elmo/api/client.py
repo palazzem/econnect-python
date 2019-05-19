@@ -17,7 +17,7 @@ class ElmoClient(object):
 
     Usage:
         # Authenticate to the system (read-only mode)
-        c = ElmoClient()
+        c = ElmoClient("https://example.com", "vendor")
         c.auth("username", "password")
 
         # Obtain a lock to do actions on the system (write mode)
