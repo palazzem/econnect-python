@@ -41,6 +41,9 @@ class ElmoClient(object):
         Raises:
             PermissionDenied: if wrong credentials are used.
             APIException: if there is an error raised by the API (not 2xx response).
+        Returns:
+            The access token retrieved from the scraped page. The token is also
+            cached in the `ElmoClient` instance.
         """
         payload = {"UserName": username, "Password": password, "RememberMe": False}
         response = self._session.post(self._router.auth, data=payload)
@@ -53,6 +56,8 @@ class ElmoClient(object):
 
         if self._session_id is None:
             raise PermissionDenied("You do not have permission to perform this action.")
+
+        return self._session_id
 
     @contextmanager
     @require_session

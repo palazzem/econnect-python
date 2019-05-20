@@ -13,7 +13,7 @@ def test_client_auth_success(server, client):
     """
     server.add(responses.POST, "https://example.com/vendor", body=html, status=200)
 
-    client.auth("test", "test")
+    assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
     assert client._session_id == "00000000-0000-0000-0000-000000000000"
     assert len(server.calls) == 1
 
