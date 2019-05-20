@@ -29,10 +29,11 @@ def test_client_auth_forbidden(server, client):
         status=200,
     )
 
-    with pytest.raises(PermissionDenied):
+    with pytest.raises(PermissionDenied) as excinfo:
         client.auth("test", "test")
     assert client._session_id is None
     assert len(server.calls) == 1
+    assert str(excinfo.value) == "Incorrect authentication credentials"
 
 
 def test_client_auth_unknown_error(server, client):
