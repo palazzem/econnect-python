@@ -14,10 +14,22 @@ DESCRIPTION = "API adapter used to control programmatically an Elmo alarm system
 URL = "https://github.com/palazzem/elmo-alerting"
 EMAIL = "hello@palazzetti.me"
 AUTHOR = "Emanuele Palazzetti"
-REQUIRES_PYTHON = ">=3.5.0"
+LICENSE = "BSD 3-Clause"
+CLASSIFIERS = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+]
+
 VERSION = "0.1.0"
 
 # What packages are required for this module to be executed?
+REQUIRES_PYTHON = ">=3.5.0"
 REQUIRED = ["requests[security]"]
 
 # What packages are optional?
@@ -48,7 +60,11 @@ else:
 
 
 class UploadCommand(Command):
-    """Support setup.py upload. Requires twine."""
+    """Support setup.py upload. Requires twine.
+
+    Usage:
+        $ setup.py publish
+    """
 
     description = "Build and publish the package."
     user_options = []
@@ -98,17 +114,7 @@ setup(
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
-    license="MIT",
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-    ],
-    # $ setup.py publish support.
+    license=LICENSE,
+    classifiers=CLASSIFIERS,
     cmdclass={"upload": UploadCommand},
 )
