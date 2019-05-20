@@ -55,7 +55,7 @@ class ElmoClient(object):
             )
 
         if self._session_id is None:
-            raise PermissionDenied("You do not have permission to perform this action.")
+            raise PermissionDenied("Incorrect authentication credentials")
 
         return self._session_id
 
@@ -81,7 +81,7 @@ class ElmoClient(object):
             yield self
             self.unlock()
         elif response.status_code == 403:
-            raise PermissionDenied("You do not have permission to perform this action.")
+            raise PermissionDenied()
         else:
             raise APIException(
                 "Unexpected status code: {}".format(response.status_code)
@@ -114,7 +114,7 @@ class ElmoClient(object):
             self._lock.release()
             return True
         elif response.status_code == 403:
-            raise PermissionDenied("You do not have permission to perform this action.")
+            raise PermissionDenied()
         else:
             raise APIException(
                 "Unexpected status code: {}".format(response.status_code)
@@ -144,7 +144,7 @@ class ElmoClient(object):
         if response.status_code == 200:
             return True
         elif response.status_code == 403:
-            raise PermissionDenied("You do not have permission to perform this action.")
+            raise PermissionDenied()
         else:
             raise APIException(
                 "Unexpected status code: {}".format(response.status_code)
@@ -174,7 +174,7 @@ class ElmoClient(object):
         if response.status_code == 200:
             return True
         elif response.status_code == 403:
-            raise PermissionDenied("You do not have permission to perform this action.")
+            raise PermissionDenied()
         else:
             raise APIException(
                 "Unexpected status code: {}".format(response.status_code)
