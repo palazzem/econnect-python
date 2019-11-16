@@ -366,7 +366,7 @@ def test_client_get_areas(server, client, areas_html):
         responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
     )
     client._session_id = "test"
-    areas_names = client._get_items(client._router.areas_list)
+    areas_names = client._get_names(client._router.areas_list)
     assert areas_names == ["Entryway", "Corridor"]
 
 
@@ -379,7 +379,7 @@ def test_client_get_inputs(server, client, inputs_html):
         status=200,
     )
     client._session_id = "test"
-    inputs_names = client._get_items(client._router.inputs_list)
+    inputs_names = client._get_names(client._router.inputs_list)
     assert inputs_names == ["Main door", "Window", "Shade"]
 
 
@@ -392,8 +392,8 @@ def test_client_get_items_unauthorized(server, client):
         status=403,
     )
     client._session_id = "test"
-    with pytest.raises(PermissionDenied):
-        client._get_items(client._router.areas_list)
+    with pytest.raises(HTTPError):
+        client._get_names(client._router.areas_list)
 
 
 def test_client_get_items_error(server, client):
@@ -405,5 +405,5 @@ def test_client_get_items_error(server, client):
         status=400,
     )
     client._session_id = "test"
-    with pytest.raises(APIException):
-        client._get_items(client._router.areas_list)
+    with pytest.raises(HTTPError):
+        client._get_names(client._router.areas_list)
