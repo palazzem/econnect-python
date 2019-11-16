@@ -1,8 +1,10 @@
 import pytest
 import responses
 
+from requests.exceptions import HTTPError
+
 from elmo.api.client import ElmoClient
-from elmo.api.exceptions import APIException, PermissionDenied, LockNotAcquired
+from elmo.api.exceptions import PermissionDenied, LockNotAcquired
 
 
 def test_client_constructor():
@@ -57,7 +59,7 @@ def test_client_auth_unknown_error(server, client):
         responses.POST, "https://example.com/vendor", body="Server Error", status=500
     )
 
-    with pytest.raises(APIException):
+    with pytest.raises(HTTPError):
         client.auth("test", "test")
     assert client._session_id is None
     assert len(server.calls) == 1
@@ -98,7 +100,7 @@ def test_client_lock_forbidden(server, client, mocker):
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
-    with pytest.raises(PermissionDenied):
+    with pytest.raises(HTTPError):
         with client.lock("test"):
             pass
     assert len(server.calls) == 1
@@ -116,7 +118,7 @@ def test_client_lock_unknown_error(server, client, mocker):
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
-    with pytest.raises(APIException):
+    with pytest.raises(HTTPError):
         with client.lock(None):
             pass
     assert len(server.calls) == 1
@@ -186,7 +188,7 @@ def test_client_unlock_fails_forbidden(server, client):
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(PermissionDenied):
+    with pytest.raises(HTTPError):
         client.unlock()
     assert not client._lock.acquire(False)
     assert len(server.calls) == 1
@@ -210,7 +212,7 @@ def test_client_unlock_fails_unexpected_error(server, client):
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(APIException):
+    with pytest.raises(HTTPError):
         client.unlock()
     assert not client._lock.acquire(False)
     assert len(server.calls) == 1
@@ -266,7 +268,7 @@ def test_client_arm_fails_missing_session(server, client):
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(PermissionDenied):
+    with pytest.raises(HTTPError):
         client.arm()
     assert len(server.calls) == 1
 
@@ -282,7 +284,7 @@ def test_client_arm_fails_unknown_error(server, client):
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(APIException):
+    with pytest.raises(HTTPError):
         client.arm()
     assert len(server.calls) == 1
 
@@ -337,7 +339,7 @@ def test_client_disarm_fails_missing_session(server, client):
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(PermissionDenied):
+    with pytest.raises(HTTPError):
         client.disarm()
     assert len(server.calls) == 1
 
@@ -353,6 +355,6 @@ def test_client_disarm_fails_unknown_error(server, client):
     client._session_id = "unknown"
     client._lock.acquire()
 
-    with pytest.raises(APIException):
+    with pytest.raises(HTTPError):
         client.disarm()
     assert len(server.calls) == 1

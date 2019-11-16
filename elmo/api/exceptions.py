@@ -4,10 +4,7 @@ class APIException(Exception):
     default_message = "A server error occurred"
 
     def __init__(self, message=None):
-        if message is None:
-            message = self.default_message
-
-        self.message = message
+        self.message = message or self.default_message
 
     def __str__(self):
         return str(self.message)
