@@ -151,3 +151,23 @@ class ElmoClient(object):
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
         return True
+
+    @require_session
+    def _get_items(self, route):
+        """Generic function that retrieves items from Elmo dashboard.
+
+        Raises:
+            PermissionDenied: if a wrong access token is used or expired.
+            APIException: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A list of string of retrieve items, areas or inputs names.
+        """
+        response = self._session.get(route)
+        if response.status_code == 200:
+            return parser.get_listed_items(response.text)
+        elif response.status_code == 403:
+            raise PermissionDenied()
+        else:
+            raise APIException(
+                "Unexpected status code: {}".format(response.status_code)
+            )

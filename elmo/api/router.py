@@ -30,7 +30,7 @@ class Router(object):
     @property
     def areas_list(self):
         # Returns a HTML page that requires parsing
-        return "{}/Areas".format(self._base_url)
+        return "{}/{}/Areas".format(self._base_url, self._vendor)
 
     @property
     def inputs(self):
@@ -39,4 +39,4 @@ class Router(object):
     @property
     def inputs_list(self):
         # Returns a HTML page that requires parsing
-        return "{}/Inputs".format(self._base_url)
+        return "{}/{}/Inputs".format(self._base_url, self._vendor)
