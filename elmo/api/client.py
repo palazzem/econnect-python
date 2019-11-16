@@ -26,10 +26,10 @@ class ElmoClient(object):
             c.disarm()  # Disarm all alarms
     """
 
-    def __init__(self, base_url, vendor):
+    def __init__(self, base_url, vendor, session_id=None):
         self._router = Router(base_url, vendor)
         self._session = Session()
-        self._session_id = None
+        self._session_id = session_id
         self._lock = Lock()
 
     def auth(self, username, password):

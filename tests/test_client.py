@@ -1,7 +1,22 @@
 import pytest
 import responses
 
+from elmo.api.client import ElmoClient
 from elmo.api.exceptions import APIException, PermissionDenied, LockNotAcquired
+
+
+def test_client_constructor():
+    """Should build the client using the base URL and the vendor suffix."""
+    client = ElmoClient("https://example.com", "vendor")
+    assert client._router._base_url == "https://example.com"
+    assert client._router._vendor == "vendor"
+    assert client._session_id is None
+
+
+def test_client_constructor_with_session_id():
+    """Should build the client with a provided `session_id`."""
+    client = ElmoClient("https://example.com", "vendor", session_id="test")
+    assert client._session_id == "test"
 
 
 def test_client_auth_success(server, client):
