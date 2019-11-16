@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from requests import Session
 
 from .router import Router
-from .exceptions import PermissionDenied, APIException
+from .exceptions import PermissionDenied
 from .decorators import require_session, require_lock
 
 from ..utils import parser
@@ -33,27 +33,26 @@ class ElmoClient(object):
         self._lock = Lock()
 
     def auth(self, username, password):
-        """Authenticate the client and retrieves the access token.
+        """Authenticate the client and retrieves the access token. This API uses
+        a standard authentication form, so even if the authentication fails, a
+        2xx status code is returned. In that case, the `session_id` is validated
+        to see if the call was a success.
 
         Args:
             username: the Username used for the authentication.
             password: the Password used for the authentication.
         Raises:
             PermissionDenied: if wrong credentials are used.
-            APIException: if there is an error raised by the API (not 2xx response).
+            HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             The access token retrieved from the scraped page. The token is also
             cached in the `ElmoClient` instance.
         """
         payload = {"UserName": username, "Password": password, "RememberMe": False}
         response = self._session.post(self._router.auth, data=payload)
-        if response.status_code == 200:
-            self._session_id = parser.get_access_token(response.text)
-        else:
-            raise APIException(
-                "Unexpected status code: {}".format(response.status_code)
-            )
+        response.raise_for_status()
 
+        self._session_id = parser.get_access_token(response.text)
         if self._session_id is None:
             raise PermissionDenied("Incorrect authentication credentials")
 
@@ -69,23 +68,17 @@ class ElmoClient(object):
         Args:
             code: the alarm code used to obtain the lock.
         Raises:
-            PermissionDenied: if a wrong access token is used or expired.
-            APIException: if there is an error raised by the API (not 2xx response).
+            HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A client instance with an acquired lock.
         """
         payload = {"userId": 1, "password": code, "sessionId": self._session_id}
         response = self._session.post(self._router.lock, data=payload)
-        if response.status_code == 200:
-            self._lock.acquire()
-            yield self
-            self.unlock()
-        elif response.status_code == 403:
-            raise PermissionDenied()
-        else:
-            raise APIException(
-                "Unexpected status code: {}".format(response.status_code)
-            )
+        response.raise_for_status()
+
+        self._lock.acquire()
+        yield self
+        self.unlock()
 
     @require_session
     @require_lock
@@ -99,26 +92,19 @@ class ElmoClient(object):
         gain the lock.
 
         Raises:
-            PermissionDenied: if a wrong access token is used or expired.
-            APIException: if there is an error raised by the API (not 2xx response).
+            HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A boolean if the lock has been released correctly.
         """
         payload = {"sessionId": self._session_id}
         response = self._session.post(self._router.unlock, data=payload)
+        response.raise_for_status()
 
         # Release the lock only in case of success, so that if it fails
         # the owner of the lock can properly unlock the system again
         # (maybe with a retry)
-        if response.status_code == 200:
-            self._lock.release()
-            return True
-        elif response.status_code == 403:
-            raise PermissionDenied()
-        else:
-            raise APIException(
-                "Unexpected status code: {}".format(response.status_code)
-            )
+        self._lock.release()
+        return True
 
     @require_session
     @require_lock
@@ -129,8 +115,7 @@ class ElmoClient(object):
         enabling only some alerts.
 
         Raises:
-            PermissionDenied: if a wrong access token is used or expired.
-            APIException: if there is an error raised by the API (not 2xx response).
+            HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A boolean if the system has been armed correctly.
         """
@@ -141,14 +126,8 @@ class ElmoClient(object):
             "sessionId": self._session_id,
         }
         response = self._session.post(self._router.send_command, data=payload)
-        if response.status_code == 200:
-            return True
-        elif response.status_code == 403:
-            raise PermissionDenied()
-        else:
-            raise APIException(
-                "Unexpected status code: {}".format(response.status_code)
-            )
+        response.raise_for_status()
+        return True
 
     @require_session
     @require_lock
@@ -159,8 +138,7 @@ class ElmoClient(object):
         enabling only some alerts.
 
         Raises:
-            PermissionDenied: if a wrong access token is used or expired.
-            APIException: if there is an error raised by the API (not 2xx response).
+            HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A boolean if the system has been disarmed correctly.
         """
@@ -171,11 +149,5 @@ class ElmoClient(object):
             "sessionId": self._session_id,
         }
         response = self._session.post(self._router.send_command, data=payload)
-        if response.status_code == 200:
-            return True
-        elif response.status_code == 403:
-            raise PermissionDenied()
-        else:
-            raise APIException(
-                "Unexpected status code: {}".format(response.status_code)
-            )
+        response.raise_for_status()
+        return True
