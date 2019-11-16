@@ -171,3 +171,78 @@ class ElmoClient(object):
             raise APIException(
                 "Unexpected status code: {}".format(response.status_code)
             )
+
+    @require_session
+    def check(self):
+        """TODO: this is a meaty function. Refactor in small pieces."""
+        areas_names = self._get_items(self._router.areas_list)
+        inputs_names = self._get_items(self._router.inputs_list)
+
+        # Retrieve Areas and Inputs status
+        payload = {
+            "sessionId": self._session_id,
+        }
+        response = self._session.post(self._router.areas, data=payload)
+        if response.status_code == 200:
+            areas = response.json()
+        elif response.status_code == 401:
+            raise PermissionDenied()
+        else:
+            raise APIException(
+                "Unexpected status code: {}".format(response.status_code)
+            )
+
+        # Redact the list so that we split between armed and not armed
+        areas_armed = []
+        areas_disarmed = []
+        for area in areas:
+            try:
+                # Not all areas may be mapped
+                name = areas_names[area["Index"]]
+            except IndexError:
+                name = "Unknown"
+
+            item = {"id": area["Id"], "name": name}
+            if area["Active"]:
+                areas_armed.append(item)
+            else:
+                areas_disarmed.append(item)
+
+        # Retrieve Inputs status
+        payload = {
+            "sessionId": self._session_id,
+        }
+        response = self._session.post(self._router.inputs, data=payload)
+        if response.status_code == 200:
+            inputs = response.json()
+        elif response.status_code == 401:
+            raise PermissionDenied()
+        else:
+            raise APIException(
+                "Unexpected status code: {}".format(response.status_code)
+            )
+
+        # Redact the list so that we split between alerted and not
+        inputs_alerted = []
+        inputs_wait = []
+        for entry in inputs:
+            try:
+                # Not all inputs may be mapped
+                name = inputs_names[entry["Index"]]
+            except IndexError:
+                name = "Unknown"
+
+            item = {"id": entry["Id"], "name": name}
+            if entry["Alarm"]:
+                inputs_alerted.append(item)
+            else:
+                inputs_wait.append(item)
+
+        # Build the Response object
+        status = {
+            "areas_armed": areas_armed,
+            "areas_disarmed": areas_disarmed,
+            "inputs_alerted": inputs_alerted,
+            "inputs_wait": inputs_wait,
+        }
+        return status
