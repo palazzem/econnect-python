@@ -30,6 +30,13 @@ jobs:
     steps:
       - run-tox:
           env: "py37"
+  test-py38:
+    docker:
+      - image: circleci/python:3.8
+    steps:
+      - run-tox:
+          env: "py38"
+
   lint:
     docker:
       - image: circleci/python:latest
@@ -43,4 +50,5 @@ workflows:
       - test-py35
       - test-py36
       - test-py37
+      - test-py38
       - lint
