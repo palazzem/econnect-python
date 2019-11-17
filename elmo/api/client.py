@@ -167,7 +167,24 @@ class ElmoClient(object):
 
     @require_session
     def check(self):
-        """TODO"""
+        """Check the Elmo System to get the status of armed or disarmed areas, inputs
+        that are in alerted state or that are waiting. With this method you can check:
+            * The global status if any area is in alerted state
+            * The status for each area, if the alarm is armed or disarmed
+            * The status for each area, if the area is in alerted state
+
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A `dict` object that includes all the above information. The `dict` is in
+            the following format:
+            {
+                "areas_armed": [{"id": 0, "name": "Entryway"}, ...],
+                "areas_disarmed": [{"id": 1, "name": "Kitchen"}, ...],
+                "inputs_alerted": [{"id": 0, "name": "Door"}, ...],
+                "inputs_wait": [{"id": 1, "name": "Window"}, ...],
+            }
+        """
 
         # Area status
         response = self._session.post(

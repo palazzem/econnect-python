@@ -97,3 +97,13 @@ def inputs_html():
     </table>
 </div>
     """
+
+
+@pytest.fixture
+def areas_data():
+    return """[{"Active":true,"ActivePartial":false,"Max":false,"Activable":true,"ActivablePartial":false,"InUse":true,"Id":1,"Index":0,"Element":1,"CommandId":0,"InProgress":false},{"Active":false,"ActivePartial":false,"Max":false,"Activable":true,"ActivablePartial":false,"InUse":true,"Id":2,"Index":1,"Element":1,"CommandId":0,"InProgress":false}]"""
+
+
+@pytest.fixture
+def inputs_data():
+    return """[{"Alarm":false,"MemoryAlarm":false,"Excluded":false,"InUse":true,"IsVideo":false,"Id":1,"Index":0,"Element":1,"CommandId":0,"InProgress":false},{"Alarm":false,"MemoryAlarm":false,"Excluded":false,"InUse":true,"IsVideo":false,"Id":2,"Index":1,"Element":1,"CommandId":0,"InProgress":false}]"""
