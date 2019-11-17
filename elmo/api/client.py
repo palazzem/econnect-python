@@ -7,7 +7,7 @@ from .router import Router
 from .exceptions import PermissionDenied
 from .decorators import require_session, require_lock
 
-from ..utils import parser
+from ..utils import parser, response_helper
 
 
 class ElmoClient(object):
@@ -159,7 +159,7 @@ class ElmoClient(object):
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A list of string of retrieve items, areas or inputs names.
+            A list of strings (names) for areas or system inputs.
         """
         response = self._session.get(route)
         response.raise_for_status()
@@ -167,75 +167,33 @@ class ElmoClient(object):
 
     @require_session
     def check(self):
-        """TODO: this is a meaty function. Refactor in small pieces."""
+        """TODO"""
+
+        # Area status
+        response = self._session.post(
+            self._router.areas, data={"sessionId": self._session_id}
+        )
+        response.raise_for_status()
+        areas = response.json()
         areas_names = self._get_names(self._router.areas_list)
+        areas_armed, areas_disarmed = response_helper.slice_list(
+            areas, areas_names, "Active"
+        )
+
+        # System Input status
+        response = self._session.post(
+            self._router.inputs, data={"sessionId": self._session_id}
+        )
+        response.raise_for_status()
+        inputs = response.json()
         inputs_names = self._get_names(self._router.inputs_list)
+        inputs_alerted, inputs_wait = response_helper.slice_list(
+            inputs, inputs_names, "Alarm"
+        )
 
-        # Retrieve Areas and Inputs status
-        payload = {
-            "sessionId": self._session_id,
-        }
-        response = self._session.post(self._router.areas, data=payload)
-        if response.status_code == 200:
-            areas = response.json()
-        elif response.status_code == 401:
-            raise PermissionDenied()
-        else:
-            raise APIException(
-                "Unexpected status code: {}".format(response.status_code)
-            )
-
-        # Redact the list so that we split between armed and not armed
-        areas_armed = []
-        areas_disarmed = []
-        for area in areas:
-            try:
-                # Not all areas may be mapped
-                name = areas_names[area["Index"]]
-            except IndexError:
-                name = "Unknown"
-
-            item = {"id": area["Id"], "name": name}
-            if area["Active"]:
-                areas_armed.append(item)
-            else:
-                areas_disarmed.append(item)
-
-        # Retrieve Inputs status
-        payload = {
-            "sessionId": self._session_id,
-        }
-        response = self._session.post(self._router.inputs, data=payload)
-        if response.status_code == 200:
-            inputs = response.json()
-        elif response.status_code == 401:
-            raise PermissionDenied()
-        else:
-            raise APIException(
-                "Unexpected status code: {}".format(response.status_code)
-            )
-
-        # Redact the list so that we split between alerted and not
-        inputs_alerted = []
-        inputs_wait = []
-        for entry in inputs:
-            try:
-                # Not all inputs may be mapped
-                name = inputs_names[entry["Index"]]
-            except IndexError:
-                name = "Unknown"
-
-            item = {"id": entry["Id"], "name": name}
-            if entry["Alarm"]:
-                inputs_alerted.append(item)
-            else:
-                inputs_wait.append(item)
-
-        # Build the Response object
-        status = {
+        return {
             "areas_armed": areas_armed,
             "areas_disarmed": areas_disarmed,
             "inputs_alerted": inputs_alerted,
             "inputs_wait": inputs_wait,
         }
-        return status
