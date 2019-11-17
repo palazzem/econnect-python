@@ -358,3 +358,197 @@ def test_client_disarm_fails_unknown_error(server, client):
     with pytest.raises(HTTPError):
         client.disarm()
     assert len(server.calls) == 1
+
+
+def test_client_get_areas(server, client, areas_html):
+    """Should make a call to retrieve items from Elmo dashboards."""
+    server.add(
+        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
+    )
+    client._session_id = "test"
+    areas_names = client._get_names(client._router.areas_list)
+    assert areas_names == ["Entryway", "Corridor"]
+
+
+def test_client_get_inputs(server, client, inputs_html):
+    """Should make a call to retrieve items from Elmo dashboards."""
+    server.add(
+        responses.GET,
+        "https://example.com/vendor/Inputs",
+        body=inputs_html,
+        status=200,
+    )
+    client._session_id = "test"
+    inputs_names = client._get_names(client._router.inputs_list)
+    assert inputs_names == ["Main door", "Window", "Shade"]
+
+
+def test_client_get_items_unauthorized(server, client):
+    """Should raise PermissionDenied if the request is unauthorized."""
+    server.add(
+        responses.GET,
+        "https://example.com/vendor/Areas",
+        body="User not authenticated",
+        status=403,
+    )
+    client._session_id = "test"
+    with pytest.raises(HTTPError):
+        client._get_names(client._router.areas_list)
+
+
+def test_client_get_items_error(server, client):
+    """Should raise APIException if there is a client error."""
+    server.add(
+        responses.GET,
+        "https://example.com/vendor/Areas",
+        body="Bad Request",
+        status=400,
+    )
+    client._session_id = "test"
+    with pytest.raises(HTTPError):
+        client._get_names(client._router.areas_list)
+
+
+def test_client_check_success(
+    server, client, areas_html, areas_data, inputs_data, inputs_html
+):
+    """Should make multiple calls to Elmo endpoints, to retrieve the status of the system."""
+    server.add(
+        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
+    )
+    server.add(
+        responses.GET,
+        "https://example.com/vendor/Inputs",
+        body=inputs_html,
+        status=200,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/areas", body=areas_data, status=200,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=200,
+    )
+    client._session_id = "test"
+    status = client.check()
+    assert status == {
+        "areas_armed": [{"id": 1, "name": "Entryway"}],
+        "areas_disarmed": [{"id": 2, "name": "Corridor"}],
+        "inputs_alerted": [],
+        "inputs_wait": [{"id": 1, "name": "Main door"}, {"id": 2, "name": "Window"}],
+    }
+
+
+def test_client_check_fail_areas_html(
+    server, client, areas_html, areas_data, inputs_data, inputs_html
+):
+    """Should raise an exception if the Areas dashboard page fails to load."""
+    server.add(
+        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=500,
+    )
+    server.add(
+        responses.GET,
+        "https://example.com/vendor/Inputs",
+        body=inputs_html,
+        status=200,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/areas", body=areas_data, status=200,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=200,
+    )
+    # Some endpoints will not be called
+    server.assert_all_requests_are_fired = False
+    client._session_id = "test"
+
+    with pytest.raises(HTTPError):
+        client.check()
+
+    assert len(server.calls) == 2
+
+
+def test_client_check_fail_inputs_html(
+    server, client, areas_html, areas_data, inputs_data, inputs_html
+):
+    """Should raise an exception if the Inputs dashboard page fails to load."""
+    server.add(
+        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
+    )
+    server.add(
+        responses.GET,
+        "https://example.com/vendor/Inputs",
+        body=inputs_html,
+        status=500,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/areas", body=areas_data, status=200,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=200,
+    )
+    # Some endpoints will not be called
+    server.assert_all_requests_are_fired = False
+    client._session_id = "test"
+
+    with pytest.raises(HTTPError):
+        client.check()
+
+    assert len(server.calls) == 4
+
+
+def test_client_check_fail_areas_api(
+    server, client, areas_html, areas_data, inputs_data, inputs_html
+):
+    """Should raise an exception if the Areas API endpoint fails."""
+    server.add(
+        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
+    )
+    server.add(
+        responses.GET,
+        "https://example.com/vendor/Inputs",
+        body=inputs_html,
+        status=200,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/areas", body=areas_data, status=500,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=200,
+    )
+    # Some endpoints will not be called
+    server.assert_all_requests_are_fired = False
+    client._session_id = "test"
+
+    with pytest.raises(HTTPError):
+        client.check()
+
+    assert len(server.calls) == 1
+
+
+def test_client_check_fail_inputs_api(
+    server, client, areas_html, areas_data, inputs_data, inputs_html
+):
+    """Should raise an exception if the Inputs API endpoint fails."""
+    server.add(
+        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
+    )
+    server.add(
+        responses.GET,
+        "https://example.com/vendor/Inputs",
+        body=inputs_html,
+        status=200,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/areas", body=areas_data, status=200,
+    )
+    server.add(
+        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=500,
+    )
+    # Some endpoints will not be called
+    server.assert_all_requests_are_fired = False
+    client._session_id = "test"
+
+    with pytest.raises(HTTPError):
+        client.check()
+
+    assert len(server.calls) == 3

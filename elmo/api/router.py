@@ -22,3 +22,21 @@ class Router(object):
     @property
     def send_command(self):
         return "{}/api/panel/syncSendCommand".format(self._base_url)
+
+    @property
+    def areas(self):
+        return "{}/api/areas".format(self._base_url)
+
+    @property
+    def areas_list(self):
+        # Returns a HTML page that requires parsing
+        return "{}/{}/Areas".format(self._base_url, self._vendor)
+
+    @property
+    def inputs(self):
+        return "{}/api/inputs".format(self._base_url)
+
+    @property
+    def inputs_list(self):
+        # Returns a HTML page that requires parsing
+        return "{}/{}/Inputs".format(self._base_url, self._vendor)

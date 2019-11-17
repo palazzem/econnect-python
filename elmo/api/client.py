@@ -7,7 +7,7 @@ from .router import Router
 from .exceptions import PermissionDenied
 from .decorators import require_session, require_lock
 
-from ..utils import parser
+from ..utils import parser, response_helper
 
 
 class ElmoClient(object):
@@ -151,3 +151,66 @@ class ElmoClient(object):
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
         return True
+
+    @require_session
+    def _get_names(self, route):
+        """Generic function that retrieves items from Elmo dashboard.
+
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A list of strings (names) for areas or system inputs.
+        """
+        response = self._session.get(route)
+        response.raise_for_status()
+        return parser.get_listed_items(response.text)
+
+    @require_session
+    def check(self):
+        """Check the Elmo System to get the status of armed or disarmed areas, inputs
+        that are in alerted state or that are waiting. With this method you can check:
+            * The global status if any area is in alerted state
+            * The status for each area, if the alarm is armed or disarmed
+            * The status for each area, if the area is in alerted state
+
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A `dict` object that includes all the above information. The `dict` is in
+            the following format:
+            {
+                "areas_armed": [{"id": 0, "name": "Entryway"}, ...],
+                "areas_disarmed": [{"id": 1, "name": "Kitchen"}, ...],
+                "inputs_alerted": [{"id": 0, "name": "Door"}, ...],
+                "inputs_wait": [{"id": 1, "name": "Window"}, ...],
+            }
+        """
+
+        # Area status
+        response = self._session.post(
+            self._router.areas, data={"sessionId": self._session_id}
+        )
+        response.raise_for_status()
+        areas = response.json()
+        areas_names = self._get_names(self._router.areas_list)
+        areas_armed, areas_disarmed = response_helper.slice_list(
+            areas, areas_names, "Active"
+        )
+
+        # System Input status
+        response = self._session.post(
+            self._router.inputs, data={"sessionId": self._session_id}
+        )
+        response.raise_for_status()
+        inputs = response.json()
+        inputs_names = self._get_names(self._router.inputs_list)
+        inputs_alerted, inputs_wait = response_helper.slice_list(
+            inputs, inputs_names, "Alarm"
+        )
+
+        return {
+            "areas_armed": areas_armed,
+            "areas_disarmed": areas_disarmed,
+            "inputs_alerted": inputs_alerted,
+            "inputs_wait": inputs_wait,
+        }
