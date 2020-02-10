@@ -152,6 +152,55 @@ class ElmoClient(object):
         response.raise_for_status()
         return True
 
+
+    @require_session
+    @require_lock
+    def arm_sector(self, sector_number):
+        """Arm selected sector without any activation delay. This API works only
+        if a system lock has been obtained, otherwise the action ends with a failure.
+        Note: API subject to changes when more configurations are allowed, such as
+        enabling only some alerts.
+
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the sector has been armed correctly.
+        """
+        payload = {
+            "CommandType": 1,
+            "ElementsClass": 9,
+            "ElementsIndexes": sector_number,
+            "sessionId": self._session_id,
+        }
+        response = self._session.post(self._router.send_command, data=payload)
+        response.raise_for_status()
+        return True
+
+
+    @require_session
+    @require_lock
+    def disarm_sector(self, sector_number):
+        """Deactivate selected sector alarm. This API works only if a system lock has been
+        obtained, otherwise the action ends with a failure.
+        Note: API subject to changes when more configurations are allowed, such as
+        enabling only some alerts.
+
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the sector has been disarmed correctly.
+        """
+        payload = {
+            "CommandType": 2,
+            "ElementsClass": 9,
+            "ElementsIndexes": sector_number,
+            "sessionId": self._session_id,
+        }
+        response = self._session.post(self._router.send_command, data=payload)
+        response.raise_for_status()
+        return True
+
+
     @require_session
     def _get_names(self, route):
         """Generic function that retrieves items from Elmo dashboard.
