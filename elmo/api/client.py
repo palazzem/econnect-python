@@ -53,6 +53,10 @@ class ElmoClient(object):
         response.raise_for_status()
 
         self._session_id = parser.get_access_token(response.text)
+
+        self._api_url = parser.get_api_url(response.text)
+        self._router._base_url = self._api_url
+        
         if self._session_id is None:
             raise PermissionDenied("Incorrect authentication credentials")
 
