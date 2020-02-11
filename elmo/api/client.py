@@ -249,7 +249,7 @@ class ElmoClient(object):
             areas, areas_names, "Active"
         )
 
-        # System Input status
+        # System input status
         response = self._session.post(
             self._router.inputs, data={"sessionId": self._session_id}
         )

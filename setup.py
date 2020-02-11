@@ -26,7 +26,7 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.7",
 ]
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 # What packages are required for this module to be executed?
 REQUIRES_PYTHON = ">=3.5.0"

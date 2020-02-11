@@ -24,7 +24,7 @@ def slice_list(items, names, key):
         except IndexError:
             name = "Unknown"
 
-        entry = {"id": item["Id"], "name": name}
+        entry = {"id": item["Id"], "index": item["Index"], "name": name}
         if item[key]:
             list_active.append(entry)
         else:
