@@ -1,5 +1,5 @@
+from .exceptions import ConfigNotValid, OptionNotAvailable
 from .options import Option
-from .exceptions import OptionNotAvailable, ConfigNotValid
 
 
 class BaseSettings(object):

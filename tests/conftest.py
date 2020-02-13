@@ -1,6 +1,6 @@
 import pytest
-import responses
 
+import responses
 from elmo.api.client import ElmoClient
 
 

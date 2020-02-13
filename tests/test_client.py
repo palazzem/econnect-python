@@ -1,10 +1,9 @@
 import pytest
-import responses
-
 from requests.exceptions import HTTPError
 
+import responses
 from elmo.api.client import ElmoClient
-from elmo.api.exceptions import PermissionDenied, LockNotAcquired
+from elmo.api.exceptions import LockNotAcquired, PermissionDenied
 
 
 def test_client_constructor():

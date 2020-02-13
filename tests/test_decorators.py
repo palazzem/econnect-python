@@ -1,9 +1,9 @@
-import pytest
-
 from threading import Lock
 
-from elmo.api.exceptions import PermissionDenied, LockNotAcquired
-from elmo.api.decorators import require_session, require_lock
+import pytest
+
+from elmo.api.decorators import require_lock, require_session
+from elmo.api.exceptions import LockNotAcquired, PermissionDenied
 
 
 def test_require_session_present():

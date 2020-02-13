@@ -1,4 +1,4 @@
-from .exceptions import PermissionDenied, LockNotAcquired
+from .exceptions import LockNotAcquired, PermissionDenied
 
 
 def require_session(func):

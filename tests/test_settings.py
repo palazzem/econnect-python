@@ -1,8 +1,8 @@
 import pytest
 
 from elmo.settings.base import BaseSettings
+from elmo.settings.exceptions import ConfigNotValid, OptionNotAvailable
 from elmo.settings.options import Option
-from elmo.settings.exceptions import OptionNotAvailable, ConfigNotValid
 
 
 def test_config_constructor():

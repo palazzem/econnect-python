@@ -1,13 +1,12 @@
-from threading import Lock
 from contextlib import contextmanager
+from threading import Lock
 
 from requests import Session
 
-from .router import Router
-from .exceptions import PermissionDenied
-from .decorators import require_session, require_lock
-
 from ..utils import parser, response_helper
+from .decorators import require_lock, require_session
+from .exceptions import PermissionDenied
+from .router import Router
 
 
 class ElmoClient(object):
@@ -154,7 +153,6 @@ class ElmoClient(object):
         response.raise_for_status()
         return True
 
-
     @require_session
     @require_lock
     def arm_sector(self, sector_number):
@@ -178,7 +176,6 @@ class ElmoClient(object):
         response.raise_for_status()
         return True
 
-
     @require_session
     @require_lock
     def disarm_sector(self, sector_number):
@@ -201,7 +198,6 @@ class ElmoClient(object):
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
         return True
-
 
     @require_session
     def _get_names(self, route):
@@ -241,7 +237,7 @@ class ElmoClient(object):
         response = self._session.post(
             self._router.areas, data={"sessionId": self._session_id}
         )
-  
+
         response.raise_for_status()
         areas = response.json()
         areas_names = self._get_names(self._router.areas_list)

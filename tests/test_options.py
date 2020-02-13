@@ -1,7 +1,7 @@
 import pytest
 
-from elmo.settings.options import Option
 from elmo.settings.exceptions import ValidationError
+from elmo.settings.options import Option
 
 
 def test_default_constructor():

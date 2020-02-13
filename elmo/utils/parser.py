@@ -1,6 +1,7 @@
-from uuid import UUID
-from bs4 import BeautifulSoup
 import re
+from uuid import UUID
+
+from bs4 import BeautifulSoup
 
 
 def get_access_token(html):
@@ -50,4 +51,3 @@ def get_api_url(html):
     apiURL = re.search(r"var apiURL = '(.+)/api/';", html).group(1)
 
     return apiURL
-    
