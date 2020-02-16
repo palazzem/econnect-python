@@ -25,11 +25,11 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.7",
 ]
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 # What packages are required for this module to be executed?
 REQUIRES_PYTHON = ">=3.5.0"
-REQUIRED = ["requests[security]", "beautifulsoup4"]
+REQUIRED = ["requests[security]"]
 
 # What packages are optional?
 EXTRAS = {}

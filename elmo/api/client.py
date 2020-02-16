@@ -3,7 +3,6 @@ from threading import Lock
 
 from requests import Session
 
-from ..utils import parser, response_helper
 from .decorators import require_lock, require_session
 from .exceptions import PermissionDenied
 from .router import Router
@@ -58,7 +57,7 @@ class ElmoClient(object):
             return self._session_id
 
         return self._session_id
-    
+
     @require_session
     def _update_strings(self):
         payload = {"sessionId": self._session_id}
@@ -263,8 +262,8 @@ class ElmoClient(object):
         areas = list(filter(lambda area: area["InUse"], areas))
         areas = list(map(lambda x: self._get_names(x, 9), areas))
 
-        areas_armed = list(filter(lambda area: area['Active'], areas))
-        areas_disarmed = list(filter(lambda area: not area['Active'], areas))
+        areas_armed = list(filter(lambda area: area["Active"], areas))
+        areas_disarmed = list(filter(lambda area: not area["Active"], areas))
 
         # Retrieve inputs
         response = self._session.post(self._router.inputs, data=payload)
@@ -278,9 +277,14 @@ class ElmoClient(object):
         inputs_wait = list(filter(lambda input_: not input_["Alarm"], inputs))
 
         def set_output_dict(item):
-            entry = {"id": item["Id"], "index": item["Index"], "element": item["Element"], "name": item["Name"]}
+            entry = {
+                "id": item["Id"],
+                "index": item["Index"],
+                "element": item["Element"],
+                "name": item["Name"],
+            }
             return entry
-        
+
         areas_armed = list(map(lambda x: set_output_dict(x), areas_armed))
         areas_disarmed = list(map(lambda x: set_output_dict(x), areas_disarmed))
         inputs_alerted = list(map(lambda x: set_output_dict(x), inputs_alerted))
