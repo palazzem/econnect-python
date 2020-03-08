@@ -13,19 +13,19 @@ class Router(object):
 
     @property
     def lock(self):
-        return "{}/api/panel/syncLogin".format(self._api_url)
+        return "{}/api/panel/syncLogin".format(self._base_url)
 
     @property
     def unlock(self):
-        return "{}/api/panel/syncLogout".format(self._api_url)
+        return "{}/api/panel/syncLogout".format(self._base_url)
 
     @property
     def send_command(self):
-        return "{}/api/panel/syncSendCommand".format(self._api_url)
+        return "{}/api/panel/syncSendCommand".format(self._base_url)
 
     @property
     def areas(self):
-        return "{}/api/areas".format(self._api_url)
+        return "{}/api/areas".format(self._base_url)
 
     @property
     def areas_list(self):
@@ -34,7 +34,7 @@ class Router(object):
 
     @property
     def inputs(self):
-        return "{}/api/inputs".format(self._api_url)
+        return "{}/api/inputs".format(self._base_url)
 
     @property
     def inputs_list(self):
