@@ -26,11 +26,12 @@ class ElmoClient(object):
     """
 
     def __init__(self, base_url, vendor, session_id=None):
-        self._router = Router(base_url, vendor)
+        self._router = Router(base_url)
         self._vendor = vendor
         self._session = Session()
         self._session_id = session_id
         self._lock = Lock()
+        self._strings = None
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses
@@ -53,6 +54,15 @@ class ElmoClient(object):
         self._session_id = data["SessionId"]
 
         return self._session_id
+
+    @require_session
+    def _update_strings(self):
+        payload = {"sessionId": self._session_id}
+
+        response = self._session.post(self._router.strings, data=payload)
+        response.raise_for_status()
+
+        self._strings = response.json()
 
     @contextmanager
     @require_session
@@ -203,7 +213,7 @@ class ElmoClient(object):
         return True
 
     @require_session
-    def _get_names(self, route):
+    def _get_names(self, element, class_):
         """Generic function that retrieves items from Elmo dashboard.
 
         Raises:
@@ -211,9 +221,17 @@ class ElmoClient(object):
         Returns:
             A list of strings (names) for areas or system inputs.
         """
-        response = self._session.get(route)
-        response.raise_for_status()
-        return parser.get_listed_items(response.text)
+        index = element["Index"]
+
+        name = next(
+            filter(
+                lambda x: x["Class"] == class_ and x["Index"] == index, self._strings
+            ),
+            None,
+        )["Description"]
+
+        element["Name"] = name
+        return element
 
     @require_session
     def check(self):
@@ -235,29 +253,47 @@ class ElmoClient(object):
                 "inputs_wait": [{"id": 1, "name": "Window"}, ...],
             }
         """
+        # Retrieves strings if not present
+        if not self._strings:
+            self._update_strings()
 
-        # Area status
-        response = self._session.post(
-            self._router.areas, data={"sessionId": self._session_id}
-        )
+        payload = {"sessionId": self._session_id}
 
+        # Retrieve areas
+        response = self._session.post(self._router.areas, data=payload)
         response.raise_for_status()
+
         areas = response.json()
-        areas_names = self._get_names(self._router.areas_list)
-        areas_armed, areas_disarmed = response_helper.slice_list(
-            areas, areas_names, "Active"
-        )
+        areas = list(filter(lambda area: area["InUse"], areas))
+        areas = list(map(lambda x: self._get_names(x, 9), areas))
 
-        # System Input status
-        response = self._session.post(
-            self._router.inputs, data={"sessionId": self._session_id}
-        )
+        areas_armed = list(filter(lambda area: area["Active"], areas))
+        areas_disarmed = list(filter(lambda area: not area["Active"], areas))
+
+        # Retrieve inputs
+        response = self._session.post(self._router.inputs, data=payload)
         response.raise_for_status()
+
         inputs = response.json()
-        inputs_names = self._get_names(self._router.inputs_list)
-        inputs_alerted, inputs_wait = response_helper.slice_list(
-            inputs, inputs_names, "Alarm"
-        )
+        inputs = list(filter(lambda input_: input_["InUse"], inputs))
+        inputs = list(map(lambda x: self._get_names(x, 10), inputs))
+
+        inputs_alerted = list(filter(lambda input_: input_["Alarm"], inputs))
+        inputs_wait = list(filter(lambda input_: not input_["Alarm"], inputs))
+
+        def set_output_dict(item):
+            entry = {
+                "id": item["Id"],
+                "index": item["Index"],
+                "element": item["Element"],
+                "name": item["Name"],
+            }
+            return entry
+
+        areas_armed = list(map(lambda x: set_output_dict(x), areas_armed))
+        areas_disarmed = list(map(lambda x: set_output_dict(x), areas_disarmed))
+        inputs_alerted = list(map(lambda x: set_output_dict(x), inputs_alerted))
+        inputs_wait = list(map(lambda x: set_output_dict(x), inputs_wait))
 
         return {
             "areas_armed": areas_armed,
