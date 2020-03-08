@@ -9,7 +9,7 @@ class Router(object):
 
     @property
     def auth(self):
-        return "{}/{}".format(self._base_url, self._vendor)
+        return "{}/api/login".format(self._base_url)
 
     @property
     def lock(self):

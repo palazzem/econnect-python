@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from requests import Session
 
 from .router import Router
-from .exceptions import PermissionDenied
 from .decorators import require_session, require_lock
 
 from ..utils import parser, response_helper
@@ -28,33 +27,30 @@ class ElmoClient(object):
 
     def __init__(self, base_url, vendor, session_id=None):
         self._router = Router(base_url, vendor)
+        self._vendor = vendor
         self._session = Session()
         self._session_id = session_id
         self._lock = Lock()
 
     def auth(self, username, password):
-        """Authenticate the client and retrieves the access token. This API uses
-        a standard authentication form, so even if the authentication fails, a
-        2xx status code is returned. In that case, the `session_id` is validated
-        to see if the call was a success.
+        """Authenticate the client and retrieves the access token. This method uses
+        the Authentication API.
 
         Args:
             username: the Username used for the authentication.
             password: the Password used for the authentication.
         Raises:
-            PermissionDenied: if wrong credentials are used.
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            The access token retrieved from the scraped page. The token is also
-            cached in the `ElmoClient` instance.
+            The access token retrieved from the API. The token is also cached in
+            the `ElmoClient` instance.
         """
-        payload = {"UserName": username, "Password": password, "RememberMe": False}
-        response = self._session.post(self._router.auth, data=payload)
+        payload = {"username": username, "password": password, "domain": self._vendor}
+        response = self._session.get(self._router.auth, params=payload)
         response.raise_for_status()
 
-        self._session_id = parser.get_access_token(response.text)
-        if self._session_id is None:
-            raise PermissionDenied("Incorrect authentication credentials")
+        data = response.json()
+        self._session_id = data["SessionId"]
 
         return self._session_id
 
@@ -244,6 +240,7 @@ class ElmoClient(object):
         response = self._session.post(
             self._router.areas, data={"sessionId": self._session_id}
         )
+
         response.raise_for_status()
         areas = response.json()
         areas_names = self._get_names(self._router.areas_list)

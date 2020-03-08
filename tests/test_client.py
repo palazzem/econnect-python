@@ -4,7 +4,7 @@ import responses
 from requests.exceptions import HTTPError
 
 from elmo.api.client import ElmoClient
-from elmo.api.exceptions import PermissionDenied, LockNotAcquired
+from elmo.api.exceptions import LockNotAcquired
 
 
 def test_client_constructor():
@@ -23,12 +23,24 @@ def test_client_constructor_with_session_id():
 
 def test_client_auth_success(server, client):
     """Should authenticate with valid credentials."""
-    html = """<script type="text/javascript">
-        var apiURL = 'https://example.com';
-        var sessionId = '00000000-0000-0000-0000-000000000000';
-        var canElevate = '1';
+    html = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Username": "test",
+            "Domain": "vendor",
+            "Language": "en",
+            "IsActivated": true,
+            "IsConnected": true,
+            "IsLoggedIn": false,
+            "IsLoginInProgress": false,
+            "CanElevate": true,
+            "AccountId": 100,
+            "IsManaged": false,
+            "Redirect": false,
+            "IsElevation": false
+        }
     """
-    server.add(responses.POST, "https://example.com/vendor", body=html, status=200)
+    server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
 
     assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
     assert client._session_id == "00000000-0000-0000-0000-000000000000"
@@ -36,27 +48,25 @@ def test_client_auth_success(server, client):
 
 
 def test_client_auth_forbidden(server, client):
-    """Should raise an exception if credentials are not valid. Elmo
-    endpoint returns a 200 with a wrong authentication error.
-    """
+    """Should raise an exception if credentials are not valid."""
     server.add(
-        responses.POST,
-        "https://example.com/vendor",
-        body="Wrong authentication",
-        status=200,
+        responses.GET,
+        "https://example.com/api/login",
+        body="Username or Password is invalid",
+        status=403,
     )
 
-    with pytest.raises(PermissionDenied) as excinfo:
+    with pytest.raises(HTTPError) as excinfo:
         client.auth("test", "test")
     assert client._session_id is None
     assert len(server.calls) == 1
-    assert str(excinfo.value) == "Incorrect authentication credentials"
+    assert "403 Client Error: Forbidden" in str(excinfo.value)
 
 
 def test_client_auth_unknown_error(server, client):
     """Should raise an exception if there is an unknown error."""
     server.add(
-        responses.POST, "https://example.com/vendor", body="Server Error", status=500
+        responses.GET, "https://example.com/api/login", body="Server Error", status=500
     )
 
     with pytest.raises(HTTPError):
