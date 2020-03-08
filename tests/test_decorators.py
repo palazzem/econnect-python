@@ -35,8 +35,10 @@ def test_require_session_missing():
             return 42
 
     client = TestClient()
-    with pytest.raises(PermissionDenied):
+    with pytest.raises(PermissionDenied) as excinfo:
         client.action()
+
+    assert str(excinfo.value) == "You do not have permission to perform this action."
 
 
 def test_require_lock():

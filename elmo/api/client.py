@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from requests import Session
 
 from .router import Router
-from .exceptions import PermissionDenied
 from .decorators import require_session, require_lock
 
 from ..utils import parser, response_helper
