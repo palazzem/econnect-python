@@ -238,6 +238,43 @@ def test_client_arm(server, client):
 
     assert client.arm() is True
     assert len(server.calls) == 1
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=1" in body
+    assert "ElementsClass=1" in body
+    assert "ElementsIndexes=1" in body
+    assert "sessionId=test" in body
+
+
+def test_client_arm_sectors(server, client):
+    """Should call the API and arm only the given sectors."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": True,
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    assert client.arm([3, 4]) is True
+    assert len(server.calls) == 2
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=1" in body
+    assert "ElementsClass=9" in body
+    assert "ElementsIndexes=3" in body
+    assert "sessionId=test" in body
+    body = server.calls[1].request.body.split("&")
+    assert "CommandType=1" in body
+    assert "ElementsClass=9" in body
+    assert "ElementsIndexes=4" in body
+    assert "sessionId=test" in body
 
 
 def test_client_arm_fails_missing_lock(server, client):
@@ -309,6 +346,43 @@ def test_client_disarm(server, client):
 
     assert client.disarm() is True
     assert len(server.calls) == 1
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=2" in body
+    assert "ElementsClass=1" in body
+    assert "ElementsIndexes=1" in body
+    assert "sessionId=test" in body
+
+
+def test_client_disarm_sectors(server, client):
+    """Should call the API and disarm only the given sectors."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": True,
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    assert client.disarm([3, 4]) is True
+    assert len(server.calls) == 2
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=2" in body
+    assert "ElementsClass=9" in body
+    assert "ElementsIndexes=3" in body
+    assert "sessionId=test" in body
+    body = server.calls[1].request.body.split("&")
+    assert "CommandType=2" in body
+    assert "ElementsClass=9" in body
+    assert "ElementsIndexes=4" in body
+    assert "sessionId=test" in body
 
 
 def test_client_disarm_fails_missing_lock(server, client):

@@ -108,48 +108,102 @@ class ElmoClient(object):
 
     @require_session
     @require_lock
-    def arm(self):
-        """Arm all system alarms without any activation delay. This API works only
+    def arm(self, sectors=None):
+        """Arm system alarms without any activation delay. This API works only
         if a system lock has been obtained, otherwise the action ends with a failure.
-        Note: API subject to changes when more configurations are allowed, such as
-        enabling only some alerts.
+        It is possible to enable ALL sectors, or provide a list of sectors such as:
 
+            client.arm()        # Arms all sectors
+            client.arm([3, 4])  # Arms only sectors 3 and 4
+
+        Args:
+            sector: (optional) list of sectors that must be armed. If the variable is
+            empty, ALL is assumed and the entire system is armed. If multiple items
+            are in the list, multiple requests are sent to arm given sectors.
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A boolean if the system has been armed correctly.
         """
-        payload = {
-            "CommandType": 1,
-            "ElementsClass": 1,
-            "ElementsIndexes": 1,
-            "sessionId": self._session_id,
-        }
-        response = self._session.post(self._router.send_command, data=payload)
-        response.raise_for_status()
+        payloads = []
+        sectors = sectors or []
+
+        if sectors:
+            # Arm only selected sectors
+            for sector in sectors:
+                payloads.append(
+                    {
+                        "CommandType": 1,
+                        "ElementsClass": 9,
+                        "ElementsIndexes": sector,
+                        "sessionId": self._session_id,
+                    }
+                )
+        else:
+            # Arm ALL sectors
+            payloads = [
+                {
+                    "CommandType": 1,
+                    "ElementsClass": 1,
+                    "ElementsIndexes": 1,
+                    "sessionId": self._session_id,
+                }
+            ]
+
+        # Arming multiple sectors requires multiple requests
+        for payload in payloads:
+            response = self._session.post(self._router.send_command, data=payload)
+            response.raise_for_status()
         return True
 
     @require_session
     @require_lock
-    def disarm(self):
-        """Deactivate all system alarms. This API works only if a system lock has been
+    def disarm(self, sectors=None):
+        """Disarm system alarms. This API works only if a system lock has been
         obtained, otherwise the action ends with a failure.
-        Note: API subject to changes when more configurations are allowed, such as
-        enabling only some alerts.
+        It is possible to disable ALL sectors, or provide a list of sectors such as:
 
+            client.disarm()     # Disarms all sectors
+            client.disarm([3])  # Disarms only sector 3
+
+        Args:
+            sector: (optional) list of sectors that must be disarmed. If the variable is
+            empty, ALL is assumed and the entire system is disarmed. If multiple items
+            are in the list, multiple requests are sent to disarm given sectors.
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A boolean if the system has been disarmed correctly.
         """
-        payload = {
-            "CommandType": 2,
-            "ElementsClass": 1,
-            "ElementsIndexes": 1,
-            "sessionId": self._session_id,
-        }
-        response = self._session.post(self._router.send_command, data=payload)
-        response.raise_for_status()
+        payloads = []
+        sectors = sectors or []
+
+        if sectors:
+            # Disarm only selected sectors
+            for sector in sectors:
+                payloads.append(
+                    {
+                        "CommandType": 2,
+                        "ElementsClass": 9,
+                        "ElementsIndexes": sector,
+                        "sessionId": self._session_id,
+                    }
+                )
+        else:
+            # Disarm ALL sectors
+            payloads = [
+                {
+                    "CommandType": 2,
+                    "ElementsClass": 1,
+                    "ElementsIndexes": 1,
+                    "sessionId": self._session_id,
+                }
+            ]
+
+        # Disarming multiple sectors requires multiple requests
+        for payload in payloads:
+            response = self._session.post(self._router.send_command, data=payload)
+            response.raise_for_status()
         return True
 
     @require_session
