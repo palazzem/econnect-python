@@ -8,7 +8,7 @@ from .router import Router
 from .decorators import require_session, require_lock
 from .exceptions import QueryNotValid
 
-from ..utils import constants as c
+from .. import query as q
 
 
 class ElmoClient(object):
@@ -208,7 +208,7 @@ class ElmoClient(object):
     @lru_cache(maxsize=1)
     @require_session
     def _get_descriptions(self):
-        """Retrieve Areas and Inputs names to map `Class` and `Index` into a
+        """Retrieve Sectors and Inputs names to map `Class` and `Index` into a
         human readable description. This method calls the E-Connect API, but the
         result is cached for the entire `ElmoClient` life-cycle.
 
@@ -216,7 +216,7 @@ class ElmoClient(object):
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A dictionary having `Class` as key, and a dictionary of strings (`Index`)
-            as a value, to map areas and inputs names.
+            as a value, to map sectors and inputs names.
         """
         payload = {"sessionId": self._session_id}
         response = self._session.post(self._router.descriptions, data=payload)
@@ -241,14 +241,14 @@ class ElmoClient(object):
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A tuple containing two list `(active, not_active)`. Every item is an entry
-            (area or input) represented by a `dict` with the following fields: `id`,
+            (sector or input) represented by a `dict` with the following fields: `id`,
             `index`, `element`, `name`.
         """
         # Query detection
-        if query == c.AREAS:
-            endpoint = self._router.areas
+        if query == q.SECTORS:
+            endpoint = self._router.sectors
             status = "Active"
-        elif query == c.INPUTS:
+        elif query == q.INPUTS:
             status = "Alarm"
             endpoint = self._router.inputs
         else:
@@ -282,10 +282,10 @@ class ElmoClient(object):
 
     @require_session
     def check(self):
-        """Check the Elmo System to get the status of armed or disarmed areas/inputs
+        """Check the Elmo System to get the status of armed or disarmed sectors or inputs
         that are in alerted state or that are waiting. This method checks:
-            * If any area is in alerted state
-            * If the alarm for each area is armed or disarmed
+            * If any sector is in alerted state
+            * If the alarm for each sector is armed or disarmed
             * If the alarm for each input is in alerted state or not
 
         Raises:
@@ -294,19 +294,19 @@ class ElmoClient(object):
             A `dict` object that includes all the above information. The `dict` is in
             the following format:
             {
-                "areas_armed": [{"id": 0, "name": "Entryway"}, ...],
-                "areas_disarmed": [{"id": 1, "name": "Kitchen"}, ...],
+                "sectors_armed": [{"id": 0, "name": "Entryway"}, ...],
+                "sectors_disarmed": [{"id": 1, "name": "Kitchen"}, ...],
                 "inputs_alerted": [{"id": 0, "name": "Door"}, ...],
                 "inputs_wait": [{"id": 1, "name": "Window"}, ...],
             }
         """
-        # Retrieve areas and inputs
-        areas_armed, areas_disarmed = self._query(c.AREAS)
-        inputs_alerted, inputs_wait = self._query(c.INPUTS)
+        # Retrieve sectors and inputs
+        sectors_armed, sectors_disarmed = self._query(q.SECTORS)
+        inputs_alerted, inputs_wait = self._query(q.INPUTS)
 
         return {
-            "areas_armed": areas_armed,
-            "areas_disarmed": areas_disarmed,
+            "sectors_armed": sectors_armed,
+            "sectors_disarmed": sectors_disarmed,
             "inputs_alerted": inputs_alerted,
             "inputs_wait": inputs_wait,
         }

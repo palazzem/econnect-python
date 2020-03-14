@@ -3,9 +3,9 @@ import responses
 
 from requests.exceptions import HTTPError
 
+from elmo import query
 from elmo.api.client import ElmoClient
 from elmo.api.exceptions import LockNotAcquired, QueryNotValid
-from elmo.utils import constants as c
 
 
 def test_client_constructor():
@@ -445,7 +445,7 @@ def test_client_disarm_fails_unknown_error(server, client):
 
 
 def test_client_get_descriptions(server, client):
-    """Should retrieve inputs/areas descriptions."""
+    """Should retrieve inputs/sectors descriptions."""
     html = """
     [
       {
@@ -492,8 +492,8 @@ def test_client_get_descriptions(server, client):
         10: {0: "Alarm", 1: "Entryway Sensor"},
     }
     # Check constants used in the code
-    assert descriptions[c.AREAS][0] == "S1 Living Room"
-    assert descriptions[c.INPUTS][0] == "Alarm"
+    assert descriptions[query.SECTORS][0] == "S1 Living Room"
+    assert descriptions[query.INPUTS][0] == "Alarm"
 
 
 def test_client_get_descriptions_cached(server, client):
@@ -544,26 +544,26 @@ def test_client_get_descriptions_error(server, client):
         client._get_descriptions()
 
 
-def test_client_get_areas(server, client, areas_json, mocker):
-    """Should query a Elmo system to retrieve areas status."""
+def test_client_get_sectors_status(server, client, sectors_json, mocker):
+    """Should query a Elmo system to retrieve sectors status."""
     # _query() depends on _get_descriptions()
     server.add(
-        responses.POST, "https://example.com/api/areas", body=areas_json, status=200
+        responses.POST, "https://example.com/api/areas", body=sectors_json, status=200
     )
     mocker.patch.object(client, "_get_descriptions")
     client._get_descriptions.return_value = {
         9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
     }
     client._session_id = "test"
-    areas_armed, areas_disarmed = client._query(c.AREAS)
+    sectors_armed, sectors_disarmed = client._query(query.SECTORS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
-    assert areas_armed == [
+    assert sectors_armed == [
         {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
         {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
     ]
-    assert areas_disarmed == [
+    assert sectors_disarmed == [
         {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
     ]
 
@@ -579,7 +579,7 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
         10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
     }
     client._session_id = "test"
-    inputs_alerted, inputs_wait = client._query(c.INPUTS)
+    inputs_alerted, inputs_wait = client._query(query.INPUTS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
@@ -610,7 +610,7 @@ def test_client_query_unauthorized(server, client, mocker):
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
     with pytest.raises(HTTPError):
-        client._query(c.AREAS)
+        client._query(query.SECTORS)
 
 
 def test_client_query_error(server, client, mocker):
@@ -621,17 +621,17 @@ def test_client_query_error(server, client, mocker):
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
     with pytest.raises(HTTPError):
-        client._query(c.AREAS)
+        client._query(query.SECTORS)
 
 
-def test_client_check_success(server, client, areas_json, inputs_json, mocker):
+def test_client_check_success(server, client, sectors_json, inputs_json, mocker):
     """Should check the global status of an Elmo System. This test runs
     as a full test and doesn't mock the `client._query()` method. Without
     mocks, the contract from `client._query()` is verified.
     """
-    # Check depends on querying areas/inputs endpoints
+    # Check depends on querying sectors/inputs endpoints
     server.add(
-        responses.POST, "https://example.com/api/areas", body=areas_json, status=200
+        responses.POST, "https://example.com/api/areas", body=sectors_json, status=200
     )
     server.add(
         responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200
@@ -645,11 +645,11 @@ def test_client_check_success(server, client, areas_json, inputs_json, mocker):
     client._session_id = "test"
     results = client.check()
     assert results == {
-        "areas_armed": [
+        "sectors_armed": [
             {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
             {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
         ],
-        "areas_disarmed": [{"element": 3, "id": 3, "index": 2, "name": "Kitchen"}],
+        "sectors_disarmed": [{"element": 3, "id": 3, "index": 2, "name": "Kitchen"}],
         "inputs_alerted": [
             {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
             {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},

@@ -27,7 +27,7 @@ class Router(object):
         return "{}/api/panel/syncSendCommand".format(self._base_url)
 
     @property
-    def areas(self):
+    def sectors(self):
         return "{}/api/areas".format(self._base_url)
 
     @property

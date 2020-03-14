@@ -19,7 +19,7 @@ def server():
 
 
 @pytest.fixture
-def areas_json():
+def sectors_json():
     return """
     [
       {
