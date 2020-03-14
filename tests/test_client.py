@@ -519,53 +519,30 @@ def test_client_get_descriptions_cached(server, client):
     assert len(server.calls) == 1
 
 
-def test_client_get_areas(server, client, areas_html):
-    """Should make a call to retrieve items from Elmo dashboards."""
+def test_client_get_descriptions_unauthorized(server, client):
+    """Should raise HTTPError if the request is unauthorized."""
     server.add(
-        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
-    )
-    client._session_id = "test"
-    areas_names = client._get_names(client._router.areas_list)
-    assert areas_names == ["Entryway", "Corridor"]
-
-
-def test_client_get_inputs(server, client, inputs_html):
-    """Should make a call to retrieve items from Elmo dashboards."""
-    server.add(
-        responses.GET,
-        "https://example.com/vendor/Inputs",
-        body=inputs_html,
-        status=200,
-    )
-    client._session_id = "test"
-    inputs_names = client._get_names(client._router.inputs_list)
-    assert inputs_names == ["Main door", "Window", "Shade"]
-
-
-def test_client_get_items_unauthorized(server, client):
-    """Should raise PermissionDenied if the request is unauthorized."""
-    server.add(
-        responses.GET,
-        "https://example.com/vendor/Areas",
+        responses.POST,
+        "https://example.com/api/strings",
         body="User not authenticated",
         status=403,
     )
     client._session_id = "test"
     with pytest.raises(HTTPError):
-        client._get_names(client._router.areas_list)
+        client._get_descriptions()
 
 
-def test_client_get_items_error(server, client):
-    """Should raise APIException if there is a client error."""
+def test_client_get_descriptions_error(server, client):
+    """Should raise HTTPError if there is a client error."""
     server.add(
-        responses.GET,
-        "https://example.com/vendor/Areas",
+        responses.POST,
+        "https://example.com/api/strings",
         body="Bad Request",
         status=400,
     )
     client._session_id = "test"
     with pytest.raises(HTTPError):
-        client._get_names(client._router.areas_list)
+        client._get_descriptions()
 
 
 def test_client_check_success(
