@@ -10,14 +10,7 @@ Through a generic configuration, the client allows:
 * Retrieving access tokens to make API calls
 * Obtaining/releasing the system `Lock()` to have exclusive control of the system
 * Arm/disarm all the alarms registered in the system
-
-This project is a **Work in Progress** and the following functionalities are part
-of the roadmap:
-
-* Retrieve alarm status (armed/disarmed) via read-only API
-* Arm/disarm a single alarm or a subset
-* REST stateless API on top of the `ElmoClient` to expose these functionalities
-  via [Google Cloud Functions](https://cloud.google.com/functions/)
+* Query the system and get the status of your sectors and inputs
 
 ## Requirements
 
