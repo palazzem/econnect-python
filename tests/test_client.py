@@ -12,7 +12,6 @@ def test_client_constructor():
     """Should build the client using the base URL and the vendor suffix."""
     client = ElmoClient("https://example.com", "vendor")
     assert client._router._base_url == "https://example.com"
-    assert client._router._vendor == "vendor"
     assert client._session_id is None
 
 
