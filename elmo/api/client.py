@@ -52,8 +52,17 @@ class ElmoClient(object):
         response = self._session.get(self._router.auth, params=payload)
         response.raise_for_status()
 
+        # Store the session_id
         data = response.json()
         self._session_id = data["SessionId"]
+
+        # Register the redirect URL and try the authentication again
+        if data["Redirect"]:
+            self._router._base_url = data["RedirectTo"]
+            redirect = self._session.get(self._router.auth, params=payload)
+            redirect.raise_for_status()
+            data = redirect.json()
+            self._session_id = data["SessionId"]
 
         return self._session_id
 

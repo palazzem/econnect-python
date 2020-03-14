@@ -75,6 +75,72 @@ def test_client_auth_unknown_error(server, client):
     assert len(server.calls) == 1
 
 
+def test_client_auth_redirect(server, client):
+    """Should update the client Router if a redirect is required."""
+    redirect = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Domain": "vendor",
+            "Redirect": true,
+            "RedirectTo": "https://redirect.example.com"
+        }
+    """
+    login = """
+        {
+            "SessionId": "99999999-9999-9999-9999-999999999999",
+            "Username": "test",
+            "Domain": "vendor",
+            "Language": "en",
+            "IsActivated": true,
+            "IsConnected": true,
+            "IsLoggedIn": false,
+            "IsLoginInProgress": false,
+            "CanElevate": true,
+            "AccountId": 100,
+            "IsManaged": false,
+            "Redirect": false,
+            "IsElevation": false
+        }
+    """
+    server.add(
+        responses.GET, "https://example.com/api/login", body=redirect, status=200
+    )
+    server.add(
+        responses.GET, "https://redirect.example.com/api/login", body=login, status=200
+    )
+
+    assert client.auth("test", "test")
+    assert client._router._base_url == "https://redirect.example.com"
+    assert client._session_id == "99999999-9999-9999-9999-999999999999"
+    assert len(server.calls) == 2
+
+
+def test_client_auth_infinite_redirect(server, client):
+    """Should prevent infinite redirects in the auth() call."""
+    redirect = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Domain": "vendor",
+            "Redirect": true,
+            "RedirectTo": "https://redirect.example.com"
+        }
+    """
+    server.add(
+        responses.GET, "https://example.com/api/login", body=redirect, status=200
+    )
+    server.add(
+        responses.GET,
+        "https://redirect.example.com/api/login",
+        body=redirect,
+        status=200,
+    )
+
+    assert client.auth("test", "test")
+    assert client._router._base_url == "https://redirect.example.com"
+    assert client._session_id == "00000000-0000-0000-0000-000000000000"
+    assert len(server.calls) == 2
+
+
 def test_client_lock(server, client, mocker):
     """Should acquire a lock if credentials are properly provided."""
     html = """[
