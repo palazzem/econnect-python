@@ -241,9 +241,15 @@ class ElmoClient(object):
         return descriptions
 
     @require_session
-    def _query(self, query):
+    def query(self, query):
         """Query an Elmo System to retrieve registered entries. Items are grouped
-        by "Active" status.
+        by "Active" status. It's possible to query different part of the system
+        using the `elmo.query` module:
+
+            from elmo import query
+
+            sectors_armed, sectors_disabled = client.query(query.SECTORS)
+            inputs_alerted, inputs_wait = client.query(query.INPUTS)
 
         Raises:
             QueryNotValid: if the query is not recognized.
@@ -297,6 +303,9 @@ class ElmoClient(object):
             * If the alarm for each sector is armed or disarmed
             * If the alarm for each input is in alerted state or not
 
+        This method is considered a shortcut that calls `client.query()` with `SECTORS`
+        and `INPUTS` queries.
+
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
@@ -310,8 +319,8 @@ class ElmoClient(object):
             }
         """
         # Retrieve sectors and inputs
-        sectors_armed, sectors_disarmed = self._query(q.SECTORS)
-        inputs_alerted, inputs_wait = self._query(q.INPUTS)
+        sectors_armed, sectors_disarmed = self.query(q.SECTORS)
+        inputs_alerted, inputs_wait = self.query(q.INPUTS)
 
         return {
             "sectors_armed": sectors_armed,
