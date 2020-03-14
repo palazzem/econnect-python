@@ -544,66 +544,12 @@ def test_client_get_descriptions_error(server, client):
         client._get_descriptions()
 
 
-def test_client_get_areas(server, client, mocker):
+def test_client_get_areas(server, client, areas_json, mocker):
     """Should query a Elmo system to retrieve areas status."""
-    html = """
-    [
-      {
-        "Active": true,
-        "ActivePartial": false,
-        "Max": false,
-        "Activable": true,
-        "ActivablePartial": false,
-        "InUse": true,
-        "Id": 1,
-        "Index": 0,
-        "Element": 1,
-        "CommandId": 0,
-        "InProgress": false
-      },
-      {
-        "Active": true,
-        "ActivePartial": false,
-        "Max": false,
-        "Activable": true,
-        "ActivablePartial": false,
-        "InUse": true,
-        "Id": 2,
-        "Index": 1,
-        "Element": 2,
-        "CommandId": 0,
-        "InProgress": false
-      },
-      {
-        "Active": false,
-        "ActivePartial": false,
-        "Max": false,
-        "Activable": true,
-        "ActivablePartial": false,
-        "InUse": true,
-        "Id": 3,
-        "Index": 2,
-        "Element": 3,
-        "CommandId": 0,
-        "InProgress": false
-      },
-      {
-        "Active": false,
-        "ActivePartial": false,
-        "Max": false,
-        "Activable": true,
-        "ActivablePartial": false,
-        "InUse": false,
-        "Id": 4,
-        "Index": 3,
-        "Element": 5,
-        "CommandId": 0,
-        "InProgress": false
-      }
-    ]
-    """
     # _query() depends on _get_descriptions()
-    server.add(responses.POST, "https://example.com/api/areas", body=html, status=200)
+    server.add(
+        responses.POST, "https://example.com/api/areas", body=areas_json, status=200
+    )
     mocker.patch.object(client, "_get_descriptions")
     client._get_descriptions.return_value = {
         9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"}
@@ -622,62 +568,12 @@ def test_client_get_areas(server, client, mocker):
     ]
 
 
-def test_client_get_inputs(server, client, mocker):
+def test_client_get_inputs(server, client, inputs_json, mocker):
     """Should query a Elmo system to retrieve inputs status."""
-    html = """
-    [
-      {
-        "Alarm": true,
-        "MemoryAlarm": false,
-        "Excluded": false,
-        "InUse": true,
-        "IsVideo": false,
-        "Id": 1,
-        "Index": 0,
-        "Element": 1,
-        "CommandId": 0,
-        "InProgress": false
-      },
-      {
-        "Alarm": true,
-        "MemoryAlarm": false,
-        "Excluded": false,
-        "InUse": true,
-        "IsVideo": false,
-        "Id": 2,
-        "Index": 1,
-        "Element": 2,
-        "CommandId": 0,
-        "InProgress": false
-      },
-      {
-        "Alarm": false,
-        "MemoryAlarm": false,
-        "Excluded": false,
-        "InUse": true,
-        "IsVideo": false,
-        "Id": 3,
-        "Index": 2,
-        "Element": 3,
-        "CommandId": 0,
-        "InProgress": false
-      },
-      {
-        "Alarm": false,
-        "MemoryAlarm": false,
-        "Excluded": false,
-        "InUse": false,
-        "IsVideo": false,
-        "Id": 4,
-        "Index": 3,
-        "Element": 4,
-        "CommandId": 0,
-        "InProgress": false
-      }
-    ]
-    """
     # _query() depends on _get_descriptions()
-    server.add(responses.POST, "https://example.com/api/inputs", body=html, status=200)
+    server.add(
+        responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200
+    )
     mocker.patch.object(client, "_get_descriptions")
     client._get_descriptions.return_value = {
         10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"}
