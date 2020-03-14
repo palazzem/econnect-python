@@ -1,0 +1,2 @@
+SECTORS = 9
+INPUTS = 10
