@@ -19,15 +19,16 @@ Through a generic configuration, the client allows:
 
 ## Getting Started
 
-Elmo is not available on PyPI so installation from this repository is required:
+This package is available on PyPI:
 
 ```bash
-$ pip install git+https://github.com/palazzem/elmo-alerting.git
+$ pip install econnect-python
 ```
 
-### Arm/disarm the System
+### Usage
 
 ```python
+from elmo import query
 from elmo.api.client import ElmoClient
 
 # Initialize the client with an API endpoint and a vendor and
@@ -37,8 +38,25 @@ client.auth("username", "password")
 
 # To arm/disarm the system you must gain the exclusive Lock()
 with client.lock("secret-code") as c:
-    c.arm()     # Arms all alarms
-    c.disarm()  # Disarms all alarms
+    c.arm()        # Arms all alarms
+    c.disarm()     # Disarms all alarms
+    c.arm(sectors=[3, 4])  # Arms only sectors 3 and 4
+    c.disarm(sectors=[3])  # Disarm only sector 3
+
+# Query the system
+sectors_armed, sectors_disarmed = client.query(query.SECTORS)
+inputs_alerted, inputs_wait = client.query(query.INPUTS)
+
+# Or use the shortcut
+status = client.check()
+
+# Returns:
+# {
+#   "sectors_armed": [{"id": 0, "name": "Entryway", "element": 1, "index": 0}, ...],
+#   "sectors_disarmed": [{"id": 1, "name": "Kitchen", "element": 2, "index": 1}, ...],
+#   "inputs_alerted": [{"id": 0, "name": "Door", "element": 3, "index": 0}, ...],
+#   "inputs_wait": [{"id": 1, "name": "Window", "element": 4, "index": 1}, ...],
+# }
 ```
 
 The access token is valid for 10 minutes after that you need to authenticate again to

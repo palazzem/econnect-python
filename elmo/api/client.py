@@ -248,7 +248,7 @@ class ElmoClient(object):
 
             from elmo import query
 
-            sectors_armed, sectors_disabled = client.query(query.SECTORS)
+            sectors_armed, sectors_disarmed = client.query(query.SECTORS)
             inputs_alerted, inputs_wait = client.query(query.INPUTS)
 
         Raises:
