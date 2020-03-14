@@ -282,11 +282,11 @@ class ElmoClient(object):
 
     @require_session
     def check(self):
-        """Check the Elmo System to get the status of armed or disarmed areas, inputs
-        that are in alerted state or that are waiting. With this method you can check:
-            * The global status if any area is in alerted state
-            * The status for each area, if the alarm is armed or disarmed
-            * The status for each area, if the area is in alerted state
+        """Check the Elmo System to get the status of armed or disarmed areas/inputs
+        that are in alerted state or that are waiting. This method checks:
+            * If any area is in alerted state
+            * If the alarm for each area is armed or disarmed
+            * If the alarm for each input is in alerted state or not
 
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
@@ -300,47 +300,9 @@ class ElmoClient(object):
                 "inputs_wait": [{"id": 1, "name": "Window"}, ...],
             }
         """
-        # Retrieves strings if not present
-        if not self._strings:
-            self._update_strings()
-
-        payload = {"sessionId": self._session_id}
-
-        # Retrieve areas
-        response = self._session.post(self._router.areas, data=payload)
-        response.raise_for_status()
-
-        areas = response.json()
-        areas = list(filter(lambda area: area["InUse"], areas))
-        areas = list(map(lambda x: self._get_names(x, 9), areas))
-
-        areas_armed = list(filter(lambda area: area["Active"], areas))
-        areas_disarmed = list(filter(lambda area: not area["Active"], areas))
-
-        # Retrieve inputs
-        response = self._session.post(self._router.inputs, data=payload)
-        response.raise_for_status()
-
-        inputs = response.json()
-        inputs = list(filter(lambda input_: input_["InUse"], inputs))
-        inputs = list(map(lambda x: self._get_names(x, 10), inputs))
-
-        inputs_alerted = list(filter(lambda input_: input_["Alarm"], inputs))
-        inputs_wait = list(filter(lambda input_: not input_["Alarm"], inputs))
-
-        def set_output_dict(item):
-            entry = {
-                "id": item["Id"],
-                "index": item["Index"],
-                "element": item["Element"],
-                "name": item["Name"],
-            }
-            return entry
-
-        areas_armed = list(map(lambda x: set_output_dict(x), areas_armed))
-        areas_disarmed = list(map(lambda x: set_output_dict(x), areas_disarmed))
-        inputs_alerted = list(map(lambda x: set_output_dict(x), inputs_alerted))
-        inputs_wait = list(map(lambda x: set_output_dict(x), inputs_wait))
+        # Retrieve areas and inputs
+        areas_armed, areas_disarmed = self._query(c.AREAS)
+        inputs_alerted, inputs_wait = self._query(c.INPUTS)
 
         return {
             "areas_armed": areas_armed,
