@@ -545,6 +545,109 @@ def test_client_get_descriptions_error(server, client):
         client._get_descriptions()
 
 
+def test_client_get_areas(server, client, mocker):
+    """Should retrieve the status of registered areas."""
+    html = """
+    [
+      {
+        "Active": true,
+        "ActivePartial": false,
+        "Max": false,
+        "Activable": true,
+        "ActivablePartial": false,
+        "InUse": true,
+        "Id": 1,
+        "Index": 0,
+        "Element": 1,
+        "CommandId": 0,
+        "InProgress": false
+      },
+      {
+        "Active": true,
+        "ActivePartial": false,
+        "Max": false,
+        "Activable": true,
+        "ActivablePartial": false,
+        "InUse": true,
+        "Id": 2,
+        "Index": 1,
+        "Element": 2,
+        "CommandId": 0,
+        "InProgress": false
+      },
+      {
+        "Active": false,
+        "ActivePartial": false,
+        "Max": false,
+        "Activable": true,
+        "ActivablePartial": false,
+        "InUse": true,
+        "Id": 3,
+        "Index": 2,
+        "Element": 3,
+        "CommandId": 0,
+        "InProgress": false
+      },
+      {
+        "Active": false,
+        "ActivePartial": false,
+        "Max": false,
+        "Activable": true,
+        "ActivablePartial": false,
+        "InUse": false,
+        "Id": 4,
+        "Index": 3,
+        "Element": 5,
+        "CommandId": 0,
+        "InProgress": false
+      }
+    ]
+    """
+    # _get_areas() depends on _get_descriptions()
+    server.add(responses.POST, "https://example.com/api/areas", body=html, status=200)
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {
+        9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"}
+    }
+    client._session_id = "test"
+    areas_armed, areas_disarmed = client._get_areas()
+    # Expected output
+    assert client._get_descriptions.called is True
+    assert len(server.calls) == 1
+    assert areas_armed == [
+        {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
+        {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
+    ]
+    assert areas_disarmed == [
+        {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
+    ]
+
+
+def test_client_get_areas_unauthorized(server, client, mocker):
+    """Should raise HTTPError if the request is unauthorized."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/areas",
+        body="User not authenticated",
+        status=403,
+    )
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    with pytest.raises(HTTPError):
+        client._get_areas()
+
+
+def test_client_get_areas_error(server, client, mocker):
+    """Should raise HTTPError if there is a client error."""
+    server.add(
+        responses.POST, "https://example.com/api/areas", body="Bad Request", status=400,
+    )
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    with pytest.raises(HTTPError):
+        client._get_areas()
+
+
 def test_client_check_success(
     server, client, areas_html, areas_data, inputs_data, inputs_html
 ):
