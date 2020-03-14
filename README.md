@@ -1,22 +1,16 @@
-# Elmo
+# E-connect Python API
 
+[![PyPI version](https://badge.fury.io/py/econnect-python.svg)](https://badge.fury.io/py/econnect-python)
 [![CircleCI](https://circleci.com/gh/palazzem/elmo-alerting/tree/master.svg?style=svg)](https://circleci.com/gh/palazzem/elmo-alerting/tree/master)
 [![codecov](https://codecov.io/gh/palazzem/elmo-alerting/branch/master/graph/badge.svg)](https://codecov.io/gh/palazzem/elmo-alerting)
 
-Elmo is an API adapter used to control programmatically an Elmo alarm system.
+`econnect-python` is an API adapter used to control programmatically an Elmo alarm system.
 Through a generic configuration, the client allows:
 
 * Retrieving access tokens to make API calls
 * Obtaining/releasing the system `Lock()` to have exclusive control of the system
 * Arm/disarm all the alarms registered in the system
-
-This project is a **Work in Progress** and the following functionalities are part
-of the roadmap:
-
-* Retrieve alarm status (armed/disarmed) via read-only API
-* Arm/disarm a single alarm or a subset
-* REST stateless API on top of the `ElmoClient` to expose these functionalities
-  via [Google Cloud Functions](https://cloud.google.com/functions/)
+* Query the system and get the status of your sectors and inputs
 
 ## Requirements
 
@@ -25,15 +19,16 @@ of the roadmap:
 
 ## Getting Started
 
-Elmo is not available on PyPI so installation from this repository is required:
+This package is available on PyPI:
 
 ```bash
-$ pip install git+https://github.com/palazzem/elmo-alerting.git
+$ pip install econnect-python
 ```
 
-### Arm/disarm the System
+### Usage
 
 ```python
+from elmo import query
 from elmo.api.client import ElmoClient
 
 # Initialize the client with an API endpoint and a vendor and
@@ -43,8 +38,25 @@ client.auth("username", "password")
 
 # To arm/disarm the system you must gain the exclusive Lock()
 with client.lock("secret-code") as c:
-    c.arm()     # Arms all alarms
-    c.disarm()  # Disarms all alarms
+    c.arm()        # Arms all alarms
+    c.disarm()     # Disarms all alarms
+    c.arm(sectors=[3, 4])  # Arms only sectors 3 and 4
+    c.disarm(sectors=[3])  # Disarm only sector 3
+
+# Query the system
+sectors_armed, sectors_disarmed = client.query(query.SECTORS)
+inputs_alerted, inputs_wait = client.query(query.INPUTS)
+
+# Or use the shortcut
+status = client.check()
+
+# Returns:
+# {
+#   "sectors_armed": [{"id": 0, "name": "Entryway", "element": 1, "index": 0}, ...],
+#   "sectors_disarmed": [{"id": 1, "name": "Kitchen", "element": 2, "index": 1}, ...],
+#   "inputs_alerted": [{"id": 0, "name": "Door", "element": 3, "index": 0}, ...],
+#   "inputs_wait": [{"id": 1, "name": "Window", "element": 4, "index": 1}, ...],
+# }
 ```
 
 The access token is valid for 10 minutes after that you need to authenticate again to
