@@ -38,9 +38,9 @@ client.auth("username", "password")
 
 # To arm/disarm the system you must gain the exclusive Lock()
 with client.lock("secret-code") as c:
-    c.arm()        # Arms all alarms
-    c.disarm()     # Disarms all alarms
-    c.arm(sectors=[3, 4])  # Arms only sectors 3 and 4
+    c.arm()                # Arm all alarms
+    c.disarm()             # Disarm all alarms
+    c.arm(sectors=[3, 4])  # Arm only sectors 3 and 4
     c.disarm(sectors=[3])  # Disarm only sector 3
 
 # Query the system
