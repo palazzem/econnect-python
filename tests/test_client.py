@@ -622,6 +622,80 @@ def test_client_get_areas(server, client, mocker):
     ]
 
 
+def test_client_get_inputs(server, client, mocker):
+    """Should query a Elmo system to retrieve inputs status."""
+    html = """
+    [
+      {
+        "Alarm": true,
+        "MemoryAlarm": false,
+        "Excluded": false,
+        "InUse": true,
+        "IsVideo": false,
+        "Id": 1,
+        "Index": 0,
+        "Element": 1,
+        "CommandId": 0,
+        "InProgress": false
+      },
+      {
+        "Alarm": true,
+        "MemoryAlarm": false,
+        "Excluded": false,
+        "InUse": true,
+        "IsVideo": false,
+        "Id": 2,
+        "Index": 1,
+        "Element": 2,
+        "CommandId": 0,
+        "InProgress": false
+      },
+      {
+        "Alarm": false,
+        "MemoryAlarm": false,
+        "Excluded": false,
+        "InUse": true,
+        "IsVideo": false,
+        "Id": 3,
+        "Index": 2,
+        "Element": 3,
+        "CommandId": 0,
+        "InProgress": false
+      },
+      {
+        "Alarm": false,
+        "MemoryAlarm": false,
+        "Excluded": false,
+        "InUse": false,
+        "IsVideo": false,
+        "Id": 4,
+        "Index": 3,
+        "Element": 4,
+        "CommandId": 0,
+        "InProgress": false
+      }
+    ]
+    """
+    # _query() depends on _get_descriptions()
+    server.add(responses.POST, "https://example.com/api/inputs", body=html, status=200)
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {
+        10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"}
+    }
+    client._session_id = "test"
+    areas_armed, areas_disarmed = client._query(c.INPUTS)
+    # Expected output
+    assert client._get_descriptions.called is True
+    assert len(server.calls) == 1
+    assert areas_armed == [
+        {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
+        {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},
+    ]
+    assert areas_disarmed == [
+        {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
+    ]
+
+
 def test_client_query_not_valid(client):
     """Should raise QueryNotValid if the query is not recognized."""
     client._session_id = "test"

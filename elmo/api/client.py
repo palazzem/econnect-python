@@ -247,7 +247,9 @@ class ElmoClient(object):
         # Query detection
         if query == c.AREAS:
             endpoint = self._router.areas
+            status = "Active"
         elif query == c.INPUTS:
+            status = "Alarm"
             endpoint = self._router.inputs
         else:
             # Bail-out if the query is not recognized
@@ -271,7 +273,7 @@ class ElmoClient(object):
                     "name": descriptions[query][entry["Index"]],
                 }
 
-                if entry["Active"]:
+                if entry[status]:
                     active.append(item)
                 else:
                     not_active.append(item)
