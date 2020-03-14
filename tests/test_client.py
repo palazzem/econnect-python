@@ -4,7 +4,7 @@ import responses
 from requests.exceptions import HTTPError
 
 from elmo.api.client import ElmoClient
-from elmo.api.exceptions import LockNotAcquired
+from elmo.api.exceptions import LockNotAcquired, QueryNotValid
 from elmo.utils import constants as c
 
 
@@ -546,7 +546,7 @@ def test_client_get_descriptions_error(server, client):
 
 
 def test_client_get_areas(server, client, mocker):
-    """Should retrieve the status of registered areas."""
+    """Should query a Elmo system to retrieve areas status."""
     html = """
     [
       {
@@ -603,14 +603,14 @@ def test_client_get_areas(server, client, mocker):
       }
     ]
     """
-    # _get_areas() depends on _get_descriptions()
+    # _query() depends on _get_descriptions()
     server.add(responses.POST, "https://example.com/api/areas", body=html, status=200)
     mocker.patch.object(client, "_get_descriptions")
     client._get_descriptions.return_value = {
         9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"}
     }
     client._session_id = "test"
-    areas_armed, areas_disarmed = client._get_areas()
+    areas_armed, areas_disarmed = client._query(c.AREAS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
@@ -623,7 +623,14 @@ def test_client_get_areas(server, client, mocker):
     ]
 
 
-def test_client_get_areas_unauthorized(server, client, mocker):
+def test_client_query_not_valid(client):
+    """Should raise QueryNotValid if the query is not recognized."""
+    client._session_id = "test"
+    with pytest.raises(QueryNotValid):
+        client._query("wrong_query")
+
+
+def test_client_query_unauthorized(server, client, mocker):
     """Should raise HTTPError if the request is unauthorized."""
     server.add(
         responses.POST,
@@ -634,10 +641,10 @@ def test_client_get_areas_unauthorized(server, client, mocker):
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
     with pytest.raises(HTTPError):
-        client._get_areas()
+        client._query(c.AREAS)
 
 
-def test_client_get_areas_error(server, client, mocker):
+def test_client_query_error(server, client, mocker):
     """Should raise HTTPError if there is a client error."""
     server.add(
         responses.POST, "https://example.com/api/areas", body="Bad Request", status=400,
@@ -645,7 +652,7 @@ def test_client_get_areas_error(server, client, mocker):
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
     with pytest.raises(HTTPError):
-        client._get_areas()
+        client._query(c.AREAS)
 
 
 def test_client_check_success(

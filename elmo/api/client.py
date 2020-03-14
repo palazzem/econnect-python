@@ -6,6 +6,7 @@ from requests import Session
 
 from .router import Router
 from .decorators import require_session, require_lock
+from .exceptions import QueryNotValid
 
 from ..utils import parser, response_helper, constants as c
 
@@ -231,41 +232,51 @@ class ElmoClient(object):
         return descriptions
 
     @require_session
-    def _get_areas(self):
-        """Query an Elmo System to retrieve registered areas. Items are grouped
-        by status (armed or disarmed).
+    def _query(self, query):
+        """Query an Elmo System to retrieve registered entries. Items are grouped
+        by "Active" status.
 
         Raises:
+            QueryNotValid: if the query is not recognized.
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A tuple containing two lists `(armed, disarmed)` where every item is a `dict`
-            with the following fields: id, index, element, name
+            A tuple containing two list `(active, not_active)`. Every item is an entry
+            (area or input) represented by a `dict` with the following fields: `id`,
+            `index`, `element`, `name`.
         """
-        payload = {"sessionId": self._session_id}
-        response = self._session.post(self._router.areas, data=payload)
+        # Query detection
+        if query == c.AREAS:
+            endpoint = self._router.areas
+        elif query == c.INPUTS:
+            endpoint = self._router.inputs
+        else:
+            # Bail-out if the query is not recognized
+            raise QueryNotValid()
+
+        response = self._session.post(endpoint, data={"sessionId": self._session_id})
         response.raise_for_status()
 
         # Retrieve cached descriptions
         descriptions = self._get_descriptions()
-        armed = []
-        disarmed = []
 
-        # Filter only areas that are used
-        for area in response.json():
-            if area["InUse"]:
+        # Filter only entries that are used
+        active = []
+        not_active = []
+        for entry in response.json():
+            if entry["InUse"]:
                 item = {
-                    "id": area["Id"],
-                    "index": area["Index"],
-                    "element": area["Element"],
-                    "name": descriptions[c.AREAS][area["Index"]],
+                    "id": entry["Id"],
+                    "index": entry["Index"],
+                    "element": entry["Element"],
+                    "name": descriptions[query][entry["Index"]],
                 }
 
-                if area["Active"]:
-                    armed.append(item)
+                if entry["Active"]:
+                    active.append(item)
                 else:
-                    disarmed.append(item)
+                    not_active.append(item)
 
-        return armed, disarmed
+        return active, not_active
 
     @require_session
     def check(self):
