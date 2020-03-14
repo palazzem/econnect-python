@@ -579,15 +579,15 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
         10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"}
     }
     client._session_id = "test"
-    areas_armed, areas_disarmed = client._query(c.INPUTS)
+    inputs_alerted, inputs_wait = client._query(c.INPUTS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
-    assert areas_armed == [
+    assert inputs_alerted == [
         {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
         {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},
     ]
-    assert areas_disarmed == [
+    assert inputs_wait == [
         {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
     ]
 
