@@ -294,10 +294,10 @@ class ElmoClient(object):
             A `dict` object that includes all the above information. The `dict` is in
             the following format:
             {
-                "sectors_armed": [{"id": 0, "name": "Entryway"}, ...],
-                "sectors_disarmed": [{"id": 1, "name": "Kitchen"}, ...],
-                "inputs_alerted": [{"id": 0, "name": "Door"}, ...],
-                "inputs_wait": [{"id": 1, "name": "Window"}, ...],
+              "sectors_armed": [{"id": 0, "name": "Entryway", "element": 1, "index": 0}, ...],
+              "sectors_disarmed": [{"id": 1, "name": "Kitchen", "element": 2, "index": 1}, ...],
+              "inputs_alerted": [{"id": 0, "name": "Door", "element": 3, "index": 0}, ...],
+              "inputs_wait": [{"id": 1, "name": "Window", "element": 4, "index": 1}, ...],
             }
         """
         # Retrieve sectors and inputs
