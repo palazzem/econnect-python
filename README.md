@@ -1,5 +1,6 @@
 # Elmo
 
+[![PyPI version](https://badge.fury.io/py/econnect-python.svg)](https://badge.fury.io/py/econnect-python)
 [![CircleCI](https://circleci.com/gh/palazzem/elmo-alerting/tree/master.svg?style=svg)](https://circleci.com/gh/palazzem/elmo-alerting/tree/master)
 [![codecov](https://codecov.io/gh/palazzem/elmo-alerting/branch/master/graph/badge.svg)](https://codecov.io/gh/palazzem/elmo-alerting)
 
