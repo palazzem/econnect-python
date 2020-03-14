@@ -612,7 +612,7 @@ def test_client_get_descriptions_error(server, client):
 
 def test_client_get_sectors_status(server, client, sectors_json, mocker):
     """Should query a Elmo system to retrieve sectors status."""
-    # _query() depends on _get_descriptions()
+    # query() depends on _get_descriptions()
     server.add(
         responses.POST, "https://example.com/api/areas", body=sectors_json, status=200
     )
@@ -621,7 +621,7 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
         9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
     }
     client._session_id = "test"
-    sectors_armed, sectors_disarmed = client._query(query.SECTORS)
+    sectors_armed, sectors_disarmed = client.query(query.SECTORS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
@@ -636,7 +636,7 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
 
 def test_client_get_inputs(server, client, inputs_json, mocker):
     """Should query a Elmo system to retrieve inputs status."""
-    # _query() depends on _get_descriptions()
+    # query() depends on _get_descriptions()
     server.add(
         responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200
     )
@@ -645,7 +645,7 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
         10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
     }
     client._session_id = "test"
-    inputs_alerted, inputs_wait = client._query(query.INPUTS)
+    inputs_alerted, inputs_wait = client.query(query.INPUTS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
@@ -662,7 +662,7 @@ def test_client_query_not_valid(client):
     """Should raise QueryNotValid if the query is not recognized."""
     client._session_id = "test"
     with pytest.raises(QueryNotValid):
-        client._query("wrong_query")
+        client.query("wrong_query")
 
 
 def test_client_query_unauthorized(server, client, mocker):
@@ -676,7 +676,7 @@ def test_client_query_unauthorized(server, client, mocker):
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
     with pytest.raises(HTTPError):
-        client._query(query.SECTORS)
+        client.query(query.SECTORS)
 
 
 def test_client_query_error(server, client, mocker):
@@ -687,13 +687,13 @@ def test_client_query_error(server, client, mocker):
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
     with pytest.raises(HTTPError):
-        client._query(query.SECTORS)
+        client.query(query.SECTORS)
 
 
 def test_client_check_success(server, client, sectors_json, inputs_json, mocker):
     """Should check the global status of an Elmo System. This test runs
-    as a full test and doesn't mock the `client._query()` method. Without
-    mocks, the contract from `client._query()` is verified.
+    as a full test and doesn't mock the `client.query()` method. Without
+    mocks, the contract from `client.query()` is verified.
     """
     # Check depends on querying sectors/inputs endpoints
     server.add(
