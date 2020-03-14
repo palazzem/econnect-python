@@ -5,6 +5,7 @@ from requests.exceptions import HTTPError
 
 from elmo.api.client import ElmoClient
 from elmo.api.exceptions import LockNotAcquired
+from elmo.utils import constants as c
 
 
 def test_client_constructor():
@@ -442,6 +443,57 @@ def test_client_disarm_fails_unknown_error(server, client):
     with pytest.raises(HTTPError):
         client.disarm()
     assert len(server.calls) == 1
+
+
+def test_client_get_descriptions(server, client):
+    """Should retrieve inputs/areas descriptions."""
+    html = """
+    [
+      {
+        "AccountId": 1,
+        "Class": 9,
+        "Index": 0,
+        "Description": "S1 Living Room",
+        "Created": "/Date(1546004120767+0100)/",
+        "Version": "AAAAAAAAgPc="
+      },
+      {
+        "AccountId": 1,
+        "Class": 9,
+        "Index": 1,
+        "Description": "S2 Bedroom",
+        "Created": "/Date(1546004120770+0100)/",
+        "Version": "AAAAAAAAgPg="
+      },
+      {
+        "AccountId": 1,
+        "Class": 10,
+        "Index": 0,
+        "Description": "Alarm",
+        "Created": "/Date(1546004147490+0100)/",
+        "Version": "AAAAAAAAgRs="
+      },
+      {
+        "AccountId": 1,
+        "Class": 10,
+        "Index": 1,
+        "Description": "Entryway Sensor",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
+      }
+    ]
+    """
+    server.add(responses.POST, "https://example.com/api/strings", body=html, status=200)
+    client._session_id = "test"
+    descriptions = client._get_descriptions()
+    # Expected output
+    assert descriptions == {
+        9: {0: "S1 Living Room", 1: "S2 Bedroom"},
+        10: {0: "Alarm", 1: "Entryway Sensor"},
+    }
+    # Check constants used in the code
+    assert descriptions[c.AREAS][0] == "S1 Living Room"
+    assert descriptions[c.INPUTS][0] == "Alarm"
 
 
 def test_client_get_areas(server, client, areas_html):

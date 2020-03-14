@@ -55,15 +55,6 @@ class ElmoClient(object):
 
         return self._session_id
 
-    @require_session
-    def _update_strings(self):
-        payload = {"sessionId": self._session_id}
-
-        response = self._session.post(self._router.strings, data=payload)
-        response.raise_for_status()
-
-        self._strings = response.json()
-
     @contextmanager
     @require_session
     def lock(self, code):
@@ -213,25 +204,29 @@ class ElmoClient(object):
         return True
 
     @require_session
-    def _get_names(self, element, class_):
-        """Generic function that retrieves items from Elmo dashboard.
+    def _get_descriptions(self):
+        """Retrieve Areas and Inputs names to map `Class` and `Index` into a
+        human readable description. This method calls the E-Connect API, but the
+        result is cached for the entire `ElmoClient` life-cycle.
 
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A list of strings (names) for areas or system inputs.
+            A dictionary having `Class` as key, and a dictionary of strings (`Index`)
+            as a value, to map areas and inputs names.
         """
-        index = element["Index"]
+        payload = {"sessionId": self._session_id}
+        response = self._session.post(self._router.descriptions, data=payload)
+        response.raise_for_status()
 
-        name = next(
-            filter(
-                lambda x: x["Class"] == class_ and x["Index"] == index, self._strings
-            ),
-            None,
-        )["Description"]
+        # Transform the list of items in a dict -> dict of strings
+        descriptions = {}
+        for item in response.json():
+            classes = descriptions.get(item["Class"], {})
+            classes[item["Index"]] = item["Description"]
+            descriptions[item["Class"]] = classes
 
-        element["Name"] = name
-        return element
+        return descriptions
 
     @require_session
     def check(self):

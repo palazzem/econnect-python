@@ -11,7 +11,7 @@ class Router(object):
         return "{}/api/login".format(self._base_url)
 
     @property
-    def strings(self):
+    def descriptions(self):
         return "{}/api/strings".format(self._base_url)
 
     @property
