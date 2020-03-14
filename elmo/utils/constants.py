@@ -1,0 +1,2 @@
+AREAS = 9
+INPUTS = 10
