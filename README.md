@@ -63,8 +63,10 @@ to open a GitHub issue and to discuss your suggestion.
 
 ### Coding Guidelines
 
-We use [flake8][1] as a style guide enforcement. Said that, we also use [black][2] to
-reformat our code, keeping a well defined style even for quotes, multi-lines blocks and other.
+We use [flake8][1] as a style guide enforcement. That said, we also use [black][2] to
+reformat our code, keeping a well defined style even for quotes, multi-lines blocks and
+other.
+
 Before submitting your code, be sure to launch `black` to reformat your PR.
 
 [1]: https://pypi.org/project/flake8/
@@ -73,8 +75,10 @@ Before submitting your code, be sure to launch `black` to reformat your PR.
 ### Testing
 
 `tox` is used to execute the following test matrix:
-* `lint`: launches `flake8` and `black --check` to be sure the code honors our style guideline
-* `py{35,36,37}`: launches `py.test` to execute all tests under Python 3.5, 3.6 and 3.7.
+* `lint`: launches `flake8` and `black --check` to be sure the code honors our style
+  guideline
+* `py{35,36,37,38}`: launches `py.test` to execute all tests under Python 3.5, 3.6, 3.7
+  and 3.8.
 
 To launch the full test matrix, just:
 
