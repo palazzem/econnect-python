@@ -3,15 +3,15 @@ import responses
 
 from requests.exceptions import HTTPError
 
+from elmo import query
 from elmo.api.client import ElmoClient
-from elmo.api.exceptions import LockNotAcquired
+from elmo.api.exceptions import LockNotAcquired, QueryNotValid
 
 
 def test_client_constructor():
     """Should build the client using the base URL and the vendor suffix."""
     client = ElmoClient("https://example.com", "vendor")
     assert client._router._base_url == "https://example.com"
-    assert client._router._vendor == "vendor"
     assert client._session_id is None
 
 
@@ -444,195 +444,215 @@ def test_client_disarm_fails_unknown_error(server, client):
     assert len(server.calls) == 1
 
 
-def test_client_get_areas(server, client, areas_html):
-    """Should make a call to retrieve items from Elmo dashboards."""
-    server.add(
-        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
-    )
+def test_client_get_descriptions(server, client):
+    """Should retrieve inputs/sectors descriptions."""
+    html = """
+    [
+      {
+        "AccountId": 1,
+        "Class": 9,
+        "Index": 0,
+        "Description": "S1 Living Room",
+        "Created": "/Date(1546004120767+0100)/",
+        "Version": "AAAAAAAAgPc="
+      },
+      {
+        "AccountId": 1,
+        "Class": 9,
+        "Index": 1,
+        "Description": "S2 Bedroom",
+        "Created": "/Date(1546004120770+0100)/",
+        "Version": "AAAAAAAAgPg="
+      },
+      {
+        "AccountId": 1,
+        "Class": 10,
+        "Index": 0,
+        "Description": "Alarm",
+        "Created": "/Date(1546004147490+0100)/",
+        "Version": "AAAAAAAAgRs="
+      },
+      {
+        "AccountId": 1,
+        "Class": 10,
+        "Index": 1,
+        "Description": "Entryway Sensor",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
+      }
+    ]
+    """
+    server.add(responses.POST, "https://example.com/api/strings", body=html, status=200)
     client._session_id = "test"
-    areas_names = client._get_names(client._router.areas_list)
-    assert areas_names == ["Entryway", "Corridor"]
+    descriptions = client._get_descriptions()
+    # Expected output
+    assert len(server.calls) == 1
+    assert descriptions == {
+        9: {0: "S1 Living Room", 1: "S2 Bedroom"},
+        10: {0: "Alarm", 1: "Entryway Sensor"},
+    }
+    # Check constants used in the code
+    assert descriptions[query.SECTORS][0] == "S1 Living Room"
+    assert descriptions[query.INPUTS][0] == "Alarm"
 
 
-def test_client_get_inputs(server, client, inputs_html):
-    """Should make a call to retrieve items from Elmo dashboards."""
-    server.add(
-        responses.GET,
-        "https://example.com/vendor/Inputs",
-        body=inputs_html,
-        status=200,
-    )
+def test_client_get_descriptions_cached(server, client):
+    """Should cache the result of get_descriptions()."""
+    html = """
+    [
+      {
+        "AccountId": 1,
+        "Class": 9,
+        "Index": 0,
+        "Description": "S1 Living Room",
+        "Created": "/Date(1546004120767+0100)/",
+        "Version": "AAAAAAAAgPc="
+      }
+    ]
+    """
+    server.add(responses.POST, "https://example.com/api/strings", body=html, status=200)
     client._session_id = "test"
-    inputs_names = client._get_names(client._router.inputs_list)
-    assert inputs_names == ["Main door", "Window", "Shade"]
+    # Calling the function twice, should make one call
+    client._get_descriptions()
+    client._get_descriptions()
+    assert len(server.calls) == 1
 
 
-def test_client_get_items_unauthorized(server, client):
-    """Should raise PermissionDenied if the request is unauthorized."""
+def test_client_get_descriptions_unauthorized(server, client):
+    """Should raise HTTPError if the request is unauthorized."""
     server.add(
-        responses.GET,
-        "https://example.com/vendor/Areas",
+        responses.POST,
+        "https://example.com/api/strings",
         body="User not authenticated",
         status=403,
     )
     client._session_id = "test"
     with pytest.raises(HTTPError):
-        client._get_names(client._router.areas_list)
+        client._get_descriptions()
 
 
-def test_client_get_items_error(server, client):
-    """Should raise APIException if there is a client error."""
+def test_client_get_descriptions_error(server, client):
+    """Should raise HTTPError if there is a client error."""
     server.add(
-        responses.GET,
-        "https://example.com/vendor/Areas",
+        responses.POST,
+        "https://example.com/api/strings",
         body="Bad Request",
         status=400,
     )
     client._session_id = "test"
     with pytest.raises(HTTPError):
-        client._get_names(client._router.areas_list)
+        client._get_descriptions()
 
 
-def test_client_check_success(
-    server, client, areas_html, areas_data, inputs_data, inputs_html
-):
-    """Should make multiple calls to Elmo endpoints, to retrieve the status of the system."""
+def test_client_get_sectors_status(server, client, sectors_json, mocker):
+    """Should query a Elmo system to retrieve sectors status."""
+    # _query() depends on _get_descriptions()
     server.add(
-        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
+        responses.POST, "https://example.com/api/areas", body=sectors_json, status=200
     )
-    server.add(
-        responses.GET,
-        "https://example.com/vendor/Inputs",
-        body=inputs_html,
-        status=200,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/areas", body=areas_data, status=200,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=200,
-    )
-    client._session_id = "test"
-    status = client.check()
-    assert status == {
-        "areas_armed": [{"id": 1, "name": "Entryway"}],
-        "areas_disarmed": [{"id": 2, "name": "Corridor"}],
-        "inputs_alerted": [],
-        "inputs_wait": [{"id": 1, "name": "Main door"}, {"id": 2, "name": "Window"}],
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {
+        9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
     }
-
-
-def test_client_check_fail_areas_html(
-    server, client, areas_html, areas_data, inputs_data, inputs_html
-):
-    """Should raise an exception if the Areas dashboard page fails to load."""
-    server.add(
-        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=500,
-    )
-    server.add(
-        responses.GET,
-        "https://example.com/vendor/Inputs",
-        body=inputs_html,
-        status=200,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/areas", body=areas_data, status=200,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=200,
-    )
-    # Some endpoints will not be called
-    server.assert_all_requests_are_fired = False
     client._session_id = "test"
-
-    with pytest.raises(HTTPError):
-        client.check()
-
-    assert len(server.calls) == 2
-
-
-def test_client_check_fail_inputs_html(
-    server, client, areas_html, areas_data, inputs_data, inputs_html
-):
-    """Should raise an exception if the Inputs dashboard page fails to load."""
-    server.add(
-        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
-    )
-    server.add(
-        responses.GET,
-        "https://example.com/vendor/Inputs",
-        body=inputs_html,
-        status=500,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/areas", body=areas_data, status=200,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=200,
-    )
-    # Some endpoints will not be called
-    server.assert_all_requests_are_fired = False
-    client._session_id = "test"
-
-    with pytest.raises(HTTPError):
-        client.check()
-
-    assert len(server.calls) == 4
-
-
-def test_client_check_fail_areas_api(
-    server, client, areas_html, areas_data, inputs_data, inputs_html
-):
-    """Should raise an exception if the Areas API endpoint fails."""
-    server.add(
-        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
-    )
-    server.add(
-        responses.GET,
-        "https://example.com/vendor/Inputs",
-        body=inputs_html,
-        status=200,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/areas", body=areas_data, status=500,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=200,
-    )
-    # Some endpoints will not be called
-    server.assert_all_requests_are_fired = False
-    client._session_id = "test"
-
-    with pytest.raises(HTTPError):
-        client.check()
-
+    sectors_armed, sectors_disarmed = client._query(query.SECTORS)
+    # Expected output
+    assert client._get_descriptions.called is True
     assert len(server.calls) == 1
+    assert sectors_armed == [
+        {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
+        {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
+    ]
+    assert sectors_disarmed == [
+        {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
+    ]
 
 
-def test_client_check_fail_inputs_api(
-    server, client, areas_html, areas_data, inputs_data, inputs_html
-):
-    """Should raise an exception if the Inputs API endpoint fails."""
+def test_client_get_inputs(server, client, inputs_json, mocker):
+    """Should query a Elmo system to retrieve inputs status."""
+    # _query() depends on _get_descriptions()
     server.add(
-        responses.GET, "https://example.com/vendor/Areas", body=areas_html, status=200,
+        responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200
     )
-    server.add(
-        responses.GET,
-        "https://example.com/vendor/Inputs",
-        body=inputs_html,
-        status=200,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/areas", body=areas_data, status=200,
-    )
-    server.add(
-        responses.POST, "https://example.com/api/inputs", body=inputs_data, status=500,
-    )
-    # Some endpoints will not be called
-    server.assert_all_requests_are_fired = False
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {
+        10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
+    }
     client._session_id = "test"
+    inputs_alerted, inputs_wait = client._query(query.INPUTS)
+    # Expected output
+    assert client._get_descriptions.called is True
+    assert len(server.calls) == 1
+    assert inputs_alerted == [
+        {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
+        {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},
+    ]
+    assert inputs_wait == [
+        {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
+    ]
 
+
+def test_client_query_not_valid(client):
+    """Should raise QueryNotValid if the query is not recognized."""
+    client._session_id = "test"
+    with pytest.raises(QueryNotValid):
+        client._query("wrong_query")
+
+
+def test_client_query_unauthorized(server, client, mocker):
+    """Should raise HTTPError if the request is unauthorized."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/areas",
+        body="User not authenticated",
+        status=403,
+    )
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
     with pytest.raises(HTTPError):
-        client.check()
+        client._query(query.SECTORS)
 
-    assert len(server.calls) == 3
+
+def test_client_query_error(server, client, mocker):
+    """Should raise HTTPError if there is a client error."""
+    server.add(
+        responses.POST, "https://example.com/api/areas", body="Bad Request", status=400,
+    )
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    with pytest.raises(HTTPError):
+        client._query(query.SECTORS)
+
+
+def test_client_check_success(server, client, sectors_json, inputs_json, mocker):
+    """Should check the global status of an Elmo System. This test runs
+    as a full test and doesn't mock the `client._query()` method. Without
+    mocks, the contract from `client._query()` is verified.
+    """
+    # Check depends on querying sectors/inputs endpoints
+    server.add(
+        responses.POST, "https://example.com/api/areas", body=sectors_json, status=200
+    )
+    server.add(
+        responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200
+    )
+    mocker.patch.object(client, "_get_descriptions")
+    # Mock descriptions list
+    client._get_descriptions.return_value = {
+        9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
+        10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
+    }
+    client._session_id = "test"
+    results = client.check()
+    assert results == {
+        "sectors_armed": [
+            {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
+            {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
+        ],
+        "sectors_disarmed": [{"element": 3, "id": 3, "index": 2, "name": "Kitchen"}],
+        "inputs_alerted": [
+            {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
+            {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},
+        ],
+        "inputs_wait": [{"element": 3, "id": 3, "index": 2, "name": "Door entryway"}],
+    }

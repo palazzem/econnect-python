@@ -1,12 +1,14 @@
 from threading import Lock
 from contextlib import contextmanager
+from functools import lru_cache
 
 from requests import Session
 
 from .router import Router
 from .decorators import require_session, require_lock
+from .exceptions import QueryNotValid
 
-from ..utils import parser, response_helper
+from .. import query as q
 
 
 class ElmoClient(object):
@@ -26,11 +28,12 @@ class ElmoClient(object):
     """
 
     def __init__(self, base_url, vendor, session_id=None):
-        self._router = Router(base_url, vendor)
+        self._router = Router(base_url)
         self._vendor = vendor
         self._session = Session()
         self._session_id = session_id
         self._lock = Lock()
+        self._strings = None
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses
@@ -202,26 +205,88 @@ class ElmoClient(object):
             response.raise_for_status()
         return True
 
+    @lru_cache(maxsize=1)
     @require_session
-    def _get_names(self, route):
-        """Generic function that retrieves items from Elmo dashboard.
+    def _get_descriptions(self):
+        """Retrieve Sectors and Inputs names to map `Class` and `Index` into a
+        human readable description. This method calls the E-Connect API, but the
+        result is cached for the entire `ElmoClient` life-cycle.
 
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A list of strings (names) for areas or system inputs.
+            A dictionary having `Class` as key, and a dictionary of strings (`Index`)
+            as a value, to map sectors and inputs names.
         """
-        response = self._session.get(route)
+        payload = {"sessionId": self._session_id}
+        response = self._session.post(self._router.descriptions, data=payload)
         response.raise_for_status()
-        return parser.get_listed_items(response.text)
+
+        # Transform the list of items in a dict -> dict of strings
+        descriptions = {}
+        for item in response.json():
+            classes = descriptions.get(item["Class"], {})
+            classes[item["Index"]] = item["Description"]
+            descriptions[item["Class"]] = classes
+
+        return descriptions
+
+    @require_session
+    def _query(self, query):
+        """Query an Elmo System to retrieve registered entries. Items are grouped
+        by "Active" status.
+
+        Raises:
+            QueryNotValid: if the query is not recognized.
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A tuple containing two list `(active, not_active)`. Every item is an entry
+            (sector or input) represented by a `dict` with the following fields: `id`,
+            `index`, `element`, `name`.
+        """
+        # Query detection
+        if query == q.SECTORS:
+            endpoint = self._router.sectors
+            status = "Active"
+        elif query == q.INPUTS:
+            status = "Alarm"
+            endpoint = self._router.inputs
+        else:
+            # Bail-out if the query is not recognized
+            raise QueryNotValid()
+
+        response = self._session.post(endpoint, data={"sessionId": self._session_id})
+        response.raise_for_status()
+
+        # Retrieve cached descriptions
+        descriptions = self._get_descriptions()
+
+        # Filter only entries that are used
+        active = []
+        not_active = []
+        for entry in response.json():
+            if entry["InUse"]:
+                item = {
+                    "id": entry["Id"],
+                    "index": entry["Index"],
+                    "element": entry["Element"],
+                    "name": descriptions[query][entry["Index"]],
+                }
+
+                if entry[status]:
+                    active.append(item)
+                else:
+                    not_active.append(item)
+
+        return active, not_active
 
     @require_session
     def check(self):
-        """Check the Elmo System to get the status of armed or disarmed areas, inputs
-        that are in alerted state or that are waiting. With this method you can check:
-            * The global status if any area is in alerted state
-            * The status for each area, if the alarm is armed or disarmed
-            * The status for each area, if the area is in alerted state
+        """Check the Elmo System to get the status of armed or disarmed sectors or inputs
+        that are in alerted state or that are waiting. This method checks:
+            * If any sector is in alerted state
+            * If the alarm for each sector is armed or disarmed
+            * If the alarm for each input is in alerted state or not
 
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
@@ -229,39 +294,19 @@ class ElmoClient(object):
             A `dict` object that includes all the above information. The `dict` is in
             the following format:
             {
-                "areas_armed": [{"id": 0, "name": "Entryway"}, ...],
-                "areas_disarmed": [{"id": 1, "name": "Kitchen"}, ...],
-                "inputs_alerted": [{"id": 0, "name": "Door"}, ...],
-                "inputs_wait": [{"id": 1, "name": "Window"}, ...],
+              "sectors_armed": [{"id": 0, "name": "Entryway", "element": 1, "index": 0}, ...],
+              "sectors_disarmed": [{"id": 1, "name": "Kitchen", "element": 2, "index": 1}, ...],
+              "inputs_alerted": [{"id": 0, "name": "Door", "element": 3, "index": 0}, ...],
+              "inputs_wait": [{"id": 1, "name": "Window", "element": 4, "index": 1}, ...],
             }
         """
-
-        # Area status
-        response = self._session.post(
-            self._router.areas, data={"sessionId": self._session_id}
-        )
-
-        response.raise_for_status()
-        areas = response.json()
-        areas_names = self._get_names(self._router.areas_list)
-        areas_armed, areas_disarmed = response_helper.slice_list(
-            areas, areas_names, "Active"
-        )
-
-        # System Input status
-        response = self._session.post(
-            self._router.inputs, data={"sessionId": self._session_id}
-        )
-        response.raise_for_status()
-        inputs = response.json()
-        inputs_names = self._get_names(self._router.inputs_list)
-        inputs_alerted, inputs_wait = response_helper.slice_list(
-            inputs, inputs_names, "Alarm"
-        )
+        # Retrieve sectors and inputs
+        sectors_armed, sectors_disarmed = self._query(q.SECTORS)
+        inputs_alerted, inputs_wait = self._query(q.INPUTS)
 
         return {
-            "areas_armed": areas_armed,
-            "areas_disarmed": areas_disarmed,
+            "sectors_armed": sectors_armed,
+            "sectors_disarmed": sectors_disarmed,
             "inputs_alerted": inputs_alerted,
             "inputs_wait": inputs_wait,
         }

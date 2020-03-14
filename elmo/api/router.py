@@ -3,13 +3,16 @@ class Router(object):
     grouped by action type.
     """
 
-    def __init__(self, base_url, vendor):
-        self._vendor = vendor
+    def __init__(self, base_url):
         self._base_url = base_url
 
     @property
     def auth(self):
         return "{}/api/login".format(self._base_url)
+
+    @property
+    def descriptions(self):
+        return "{}/api/strings".format(self._base_url)
 
     @property
     def lock(self):
@@ -24,19 +27,9 @@ class Router(object):
         return "{}/api/panel/syncSendCommand".format(self._base_url)
 
     @property
-    def areas(self):
+    def sectors(self):
         return "{}/api/areas".format(self._base_url)
-
-    @property
-    def areas_list(self):
-        # Returns a HTML page that requires parsing
-        return "{}/{}/Areas".format(self._base_url, self._vendor)
 
     @property
     def inputs(self):
         return "{}/api/inputs".format(self._base_url)
-
-    @property
-    def inputs_list(self):
-        # Returns a HTML page that requires parsing
-        return "{}/{}/Inputs".format(self._base_url, self._vendor)
