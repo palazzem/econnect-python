@@ -9,24 +9,25 @@ from setuptools import find_packages, setup, Command
 
 
 # Package meta-data
-NAME = "elmo"
+NAME = "econnect-python"
 DESCRIPTION = "API adapter used to control programmatically an Elmo alarm system."
-URL = "https://github.com/palazzem/elmo-alerting"
-EMAIL = "hello@palazzetti.me"
+URL = "https://github.com/palazzem/econnect-python"
+EMAIL = "emanuele.palazzetti@gmail.com"
 AUTHOR = "Emanuele Palazzetti"
 LICENSE = "BSD 3-Clause"
 CLASSIFIERS = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.5",
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
 ]
 
-VERSION = "0.1.0"
+VERSION = "0.3.0"
 
 # What packages are required for this module to be executed?
 REQUIRES_PYTHON = ">=3.5.0"
