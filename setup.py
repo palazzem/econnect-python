@@ -30,7 +30,7 @@ VERSION = "0.1.0"
 
 # What packages are required for this module to be executed?
 REQUIRES_PYTHON = ">=3.5.0"
-REQUIRED = ["requests[security]", "beautifulsoup4"]
+REQUIRED = ["requests[security]"]
 
 # What packages are optional?
 EXTRAS = {}

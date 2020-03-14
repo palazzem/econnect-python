@@ -8,7 +8,7 @@ from .router import Router
 from .decorators import require_session, require_lock
 from .exceptions import QueryNotValid
 
-from ..utils import parser, response_helper, constants as c
+from ..utils import constants as c
 
 
 class ElmoClient(object):
