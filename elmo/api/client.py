@@ -1,5 +1,6 @@
 from threading import Lock
 from contextlib import contextmanager
+from functools import lru_cache
 
 from requests import Session
 
@@ -203,6 +204,7 @@ class ElmoClient(object):
             response.raise_for_status()
         return True
 
+    @lru_cache(maxsize=1)
     @require_session
     def _get_descriptions(self):
         """Retrieve Areas and Inputs names to map `Class` and `Index` into a

@@ -487,6 +487,7 @@ def test_client_get_descriptions(server, client):
     client._session_id = "test"
     descriptions = client._get_descriptions()
     # Expected output
+    assert len(server.calls) == 1
     assert descriptions == {
         9: {0: "S1 Living Room", 1: "S2 Bedroom"},
         10: {0: "Alarm", 1: "Entryway Sensor"},
@@ -494,6 +495,28 @@ def test_client_get_descriptions(server, client):
     # Check constants used in the code
     assert descriptions[c.AREAS][0] == "S1 Living Room"
     assert descriptions[c.INPUTS][0] == "Alarm"
+
+
+def test_client_get_descriptions_cached(server, client):
+    """Should cache the result of get_descriptions()."""
+    html = """
+    [
+      {
+        "AccountId": 1,
+        "Class": 9,
+        "Index": 0,
+        "Description": "S1 Living Room",
+        "Created": "/Date(1546004120767+0100)/",
+        "Version": "AAAAAAAAgPc="
+      }
+    ]
+    """
+    server.add(responses.POST, "https://example.com/api/strings", body=html, status=200)
+    client._session_id = "test"
+    # Calling the function twice, should make one call
+    client._get_descriptions()
+    client._get_descriptions()
+    assert len(server.calls) == 1
 
 
 def test_client_get_areas(server, client, areas_html):
