@@ -324,6 +324,81 @@ class ElmoClient(object):
 
         return True
 
+    @require_session
+    @require_lock
+    def exclude(self, inputs):
+        """Exclude system inputs. This API works only if a system lock has been
+        obtained, otherwise the action ends with a failure.
+        It is possible to provide a list of inputs such as:
+
+            client.exclude([3])  # Excludes only input 3
+            client.exclude([3, 5])  # Excludes input 3 and 5
+
+        Args:
+            inputs: list of inputs that must be excluded. If multiple items
+            are in the list, multiple requests are sent to exclude given inputs.
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the input has been excluded correctly.
+        """
+        payloads = []
+
+        # Exclude only selected inputs
+        for element in inputs:
+            payloads.append(
+                {
+                    "CommandType": 2,
+                    "ElementsClass": 10,
+                    "ElementsIndexes": element,
+                    "sessionId": self._session_id,
+                }
+            )
+
+        # Excluding multiple inputs requires multiple requests
+        for payload in payloads:
+            response = self._session.post(self._router.send_command, data=payload)
+            response.raise_for_status()
+        return True
+
+    @require_session
+    @require_lock
+    def admit(self, inputs):
+        """Admit system inputs. This sorts the opposite effect of the exclude action.
+        This API works only if a system lock has been
+        obtained, otherwise the action ends with a failure.
+        It is possible to provide a list of inputs such as:
+
+            client.admit([3])  # Admits only input 3
+            client.admit([3, 5])  # Admits input 3 and 5
+
+        Args:
+            inputs: list of inputs that must be admitted. If multiple items
+            are in the list, multiple requests are sent to admit given inputs.
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the input has been excluded correctly.
+        """
+        payloads = []
+
+        # Admit only selected inputs
+        for element in inputs:
+            payloads.append(
+                {
+                    "CommandType": 1,
+                    "ElementsClass": 10,
+                    "ElementsIndexes": element,
+                    "sessionId": self._session_id,
+                }
+            )
+
+        # Admitting multiple inputs requires multiple requests
+        for payload in payloads:
+            response = self._session.post(self._router.send_command, data=payload)
+            response.raise_for_status()
+        return True
+
     @lru_cache(maxsize=1)
     @require_session
     def _get_descriptions(self):
