@@ -762,8 +762,8 @@ def test_client_disarm_fails_unknown_error(server, client):
     assert len(server.calls) == 1
 
 
-def test_client_admit(server, client):
-    """Should call the API and admit only the given inputs."""
+def test_client_include(server, client):
+    """Should call the API and include only the given inputs."""
     html = """[
         {
             "Poller": {"Poller": 1, "Panel": 1},
@@ -780,7 +780,7 @@ def test_client_admit(server, client):
     client._session_id = "test"
     client._lock.acquire()
 
-    assert client.admit([3, 4]) is True
+    assert client.include([3, 4]) is True
     assert len(server.calls) == 2
     body = server.calls[0].request.body.split("&")
     assert "CommandType=1" in body
@@ -794,17 +794,17 @@ def test_client_admit(server, client):
     assert "sessionId=test" in body
 
 
-def test_client_admit_fails_missing_lock(server, client):
-    """admit() should fail without calling the endpoint if Lock() has not been acquired."""
+def test_client_include_fails_missing_lock(server, client):
+    """include() should fail without calling the endpoint if Lock() has not been acquired."""
     client._session_id = "test"
 
     with pytest.raises(LockNotAcquired):
-        client.admit([1])
+        client.include([1])
     assert client._lock.acquire(False)
     assert len(server.calls) == 0
 
 
-def test_client_admit_fails_missing_session(server, client):
+def test_client_include_fails_missing_session(server, client):
     """Should fail if a wrong access token is used."""
     html = """[
         {
@@ -823,11 +823,11 @@ def test_client_admit_fails_missing_session(server, client):
     client._lock.acquire()
 
     with pytest.raises(HTTPError):
-        client.admit([1])
+        client.include([1])
     assert len(server.calls) == 1
 
 
-def test_client_admit_fails_unknown_error(server, client):
+def test_client_include_fails_unknown_error(server, client):
     """Should fail if an unknown error happens."""
     server.add(
         responses.POST,
@@ -839,7 +839,7 @@ def test_client_admit_fails_unknown_error(server, client):
     client._lock.acquire()
 
     with pytest.raises(HTTPError):
-        client.admit([1])
+        client.include([1])
     assert len(server.calls) == 1
 
 

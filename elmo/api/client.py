@@ -327,7 +327,13 @@ class ElmoClient(object):
     @require_session
     @require_lock
     def exclude(self, inputs):
-        """Exclude system inputs. This API works only if a system lock has been
+        """Exclude passed inputs: they are not alarmed
+        when you arm the area they belongs to.
+
+        This API provides the same effects as turning them
+        from "idle" to "bypassed" on the E-Connect web UI.
+
+        This API works only if a system lock has been
         obtained, otherwise the action ends with a failure.
         It is possible to provide a list of inputs such as:
 
@@ -363,26 +369,31 @@ class ElmoClient(object):
 
     @require_session
     @require_lock
-    def admit(self, inputs):
-        """Admit system inputs. This sorts the opposite effect of the exclude action.
+    def include(self, inputs):
+        """Include system inputs: they are alarmed
+        when you arm the area they belongs to.
+
+        This API provides the same effects as turning them
+        from "bypassed" to "idle" on the E-Connect web UI.
+
         This API works only if a system lock has been
         obtained, otherwise the action ends with a failure.
         It is possible to provide a list of inputs such as:
 
-            client.admit([3])  # Admits only input 3
-            client.admit([3, 5])  # Admits input 3 and 5
+            client.include([3])  # Includes only input 3
+            client.include([3, 5])  # Includes input 3 and 5
 
         Args:
-            inputs: list of inputs that must be admitted. If multiple items
-            are in the list, multiple requests are sent to admit given inputs.
+            inputs: list of inputs that must be included. If multiple items
+            are in the list, multiple requests are sent to include given inputs.
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A boolean if the input has been excluded correctly.
+            A boolean if the input has been included correctly.
         """
         payloads = []
 
-        # Admit only selected inputs
+        # Include only selected inputs
         for element in inputs:
             payloads.append(
                 {
@@ -393,7 +404,7 @@ class ElmoClient(object):
                 }
             )
 
-        # Admitting multiple inputs requires multiple requests
+        # Including multiple inputs requires multiple requests
         for payload in payloads:
             response = self._session.post(self._router.send_command, data=payload)
             response.raise_for_status()
