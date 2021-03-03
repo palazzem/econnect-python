@@ -4,7 +4,7 @@ class Router(object):
     """
 
     def __init__(self, base_url):
-        self._base_url = base_url
+        self._base_url = base_url or "https://connect.elmospa.com"
 
     @property
     def auth(self):
