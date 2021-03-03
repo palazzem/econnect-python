@@ -18,7 +18,7 @@ class ElmoClient(object):
 
     Usage:
         # Authenticate to the system (read-only mode)
-        c = ElmoClient("https://example.com", "vendor")
+        c = ElmoClient()
         c.auth("username", "password")
 
         # Obtain a lock to do actions on the system (write mode)
@@ -27,9 +27,9 @@ class ElmoClient(object):
             c.disarm()  # Disarm all alarms
     """
 
-    def __init__(self, base_url, vendor, session_id=None):
+    def __init__(self, base_url=None, domain=None, session_id=None):
         self._router = Router(base_url)
-        self._vendor = vendor
+        self._domain = domain
         self._session = Session()
         self._session_id = session_id
         self._lock = Lock()
@@ -48,7 +48,10 @@ class ElmoClient(object):
             The access token retrieved from the API. The token is also cached in
             the `ElmoClient` instance.
         """
-        payload = {"username": username, "password": password, "domain": self._vendor}
+        payload = {"username": username, "password": password}
+        if self._domain is not None:
+            payload["domain"] = self._domain
+
         response = self._session.get(self._router.auth, params=payload)
         response.raise_for_status()
 

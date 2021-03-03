@@ -8,16 +8,35 @@ from elmo.api.client import ElmoClient
 from elmo.api.exceptions import LockNotAcquired, QueryNotValid
 
 
-def test_client_constructor():
-    """Should build the client using the base URL and the vendor suffix."""
-    client = ElmoClient("https://example.com", "vendor")
+def test_client_constructor_default():
+    """Should build the client using the default values."""
+    client = ElmoClient()
+    assert client._router._base_url == "https://connect.elmospa.com"
+    assert client._domain is None
+    assert client._session_id is None
+
+
+def test_client_constructor_v03():
+    """Backward compatibility pre 0.4: the order of parameters must not change
+    otherwise a breaking change is introduced.
+    """
+    client = ElmoClient("https://example.com", "domain")
     assert client._router._base_url == "https://example.com"
+    assert client._domain == "domain"
+    assert client._session_id is None
+
+
+def test_client_constructor():
+    """Should build the client using the base URL and the domain suffix."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    assert client._router._base_url == "https://example.com"
+    assert client._domain == "domain"
     assert client._session_id is None
 
 
 def test_client_constructor_with_session_id():
     """Should build the client with a provided `session_id`."""
-    client = ElmoClient("https://example.com", "vendor", session_id="test")
+    client = ElmoClient(session_id="test")
     assert client._session_id == "test"
 
 
@@ -27,7 +46,7 @@ def test_client_auth_success(server, client):
         {
             "SessionId": "00000000-0000-0000-0000-000000000000",
             "Username": "test",
-            "Domain": "vendor",
+            "Domain": "domain",
             "Language": "en",
             "IsActivated": true,
             "IsConnected": true,
@@ -80,7 +99,7 @@ def test_client_auth_redirect(server, client):
     redirect = """
         {
             "SessionId": "00000000-0000-0000-0000-000000000000",
-            "Domain": "vendor",
+            "Domain": "domain",
             "Redirect": true,
             "RedirectTo": "https://redirect.example.com"
         }
@@ -89,7 +108,7 @@ def test_client_auth_redirect(server, client):
         {
             "SessionId": "99999999-9999-9999-9999-999999999999",
             "Username": "test",
-            "Domain": "vendor",
+            "Domain": "domain",
             "Language": "en",
             "IsActivated": true,
             "IsConnected": true,
@@ -120,7 +139,7 @@ def test_client_auth_infinite_redirect(server, client):
     redirect = """
         {
             "SessionId": "00000000-0000-0000-0000-000000000000",
-            "Domain": "vendor",
+            "Domain": "domain",
             "Redirect": true,
             "RedirectTo": "https://redirect.example.com"
         }
@@ -139,6 +158,36 @@ def test_client_auth_infinite_redirect(server, client):
     assert client._router._base_url == "https://redirect.example.com"
     assert client._session_id == "00000000-0000-0000-0000-000000000000"
     assert len(server.calls) == 2
+
+
+def test_client_auth_without_domain(server):
+    """Should authenticate without sending the domain field."""
+    html = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Redirect": false
+        }
+    """
+    client = ElmoClient(base_url="https://example.com")
+    server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    client.auth("test", "test")
+    assert len(server.calls) == 1
+    assert "domain" not in server.calls[0].request.params
+
+
+def test_client_auth_with_domain(server):
+    """Should authenticate sending the domain field."""
+    html = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Redirect": false
+        }
+    """
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    client.auth("test", "test")
+    assert len(server.calls) == 1
+    assert server.calls[0].request.params["domain"] == "domain"
 
 
 def test_client_lock(server, client, mocker):
