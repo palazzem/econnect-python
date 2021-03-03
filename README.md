@@ -14,7 +14,7 @@ Through a generic configuration, the client allows:
 
 ## Requirements
 
-* Python 3.5+
+* Python 3.6+
 * `requests`
 
 ## Getting Started
