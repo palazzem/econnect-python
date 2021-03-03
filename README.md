@@ -59,9 +59,10 @@ status = client.check()
 # }
 ```
 
-The access token is valid for 10 minutes after that you need to authenticate again to
-refresh the token. Obtaining the lock via `client.lock("code")` is mandatory to arm or
-disarm the alert, otherwise the API returns `403`.
+The access token is valid for 10 minutes, after which, you need to authenticate again to
+refresh the token. Obtaining the lock via `client.lock("secret-code")` is mandatory to arm or
+disarm the system, otherwise the API returns `403`. `secret-code` is the numeric code you
+use to arm/disarm the system from the alarm panel.
 
 Once the lock is obtained, other clients cannot connect to the alarm system and only a
 manual override on the terminal is allowed. Outside the context manager, the lock is
