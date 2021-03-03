@@ -682,7 +682,10 @@ def test_client_query_unauthorized(server, client, mocker):
 def test_client_query_error(server, client, mocker):
     """Should raise HTTPError if there is a client error."""
     server.add(
-        responses.POST, "https://example.com/api/areas", body="Bad Request", status=400,
+        responses.POST,
+        "https://example.com/api/areas",
+        body="Bad Request",
+        status=400,
     )
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")

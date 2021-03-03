@@ -4,28 +4,73 @@
 #
 #    pip-compile requirements-testing.in
 #
-appdirs==1.4.3            # via virtualenv
-attrs==19.3.0             # via pytest
-certifi==2019.11.28       # via requests
-chardet==3.0.4            # via requests
-codecov==2.0.16
-coverage==5.0.3           # via codecov, pytest-cov
-distlib==0.3.0            # via virtualenv
-filelock==3.0.12          # via tox, virtualenv
-idna==2.9                 # via requests
-more-itertools==8.2.0     # via pytest
-packaging==20.3           # via pytest, tox
-pluggy==0.13.1            # via pytest, tox
-py==1.8.1                 # via pytest, tox
-pyparsing==2.4.6          # via packaging
-pytest-cov==2.8.1
-pytest-mock==2.0.0
-pytest==5.3.5
-requests==2.23.0          # via codecov, responses
-responses==0.10.12
-six==1.14.0               # via packaging, responses, tox, virtualenv
-toml==0.10.0              # via tox
-tox==3.14.5
-urllib3==1.25.8           # via requests
-virtualenv==20.0.8        # via tox
-wcwidth==0.1.8            # via pytest
+appdirs==1.4.4
+    # via virtualenv
+attrs==20.3.0
+    # via pytest
+certifi==2020.12.5
+    # via requests
+chardet==4.0.0
+    # via requests
+codecov==2.1.11
+    # via -r requirements-testing.in
+coverage==5.5
+    # via
+    #   codecov
+    #   pytest-cov
+distlib==0.3.1
+    # via virtualenv
+filelock==3.0.12
+    # via
+    #   tox
+    #   virtualenv
+idna==2.10
+    # via requests
+iniconfig==1.1.1
+    # via pytest
+packaging==20.9
+    # via
+    #   pytest
+    #   tox
+pluggy==0.13.1
+    # via
+    #   pytest
+    #   tox
+py==1.10.0
+    # via
+    #   pytest
+    #   tox
+pyparsing==2.4.7
+    # via packaging
+pytest-cov==2.11.1
+    # via -r requirements-testing.in
+pytest-mock==3.5.1
+    # via -r requirements-testing.in
+pytest==6.2.2
+    # via
+    #   -r requirements-testing.in
+    #   pytest-cov
+    #   pytest-mock
+requests==2.25.1
+    # via
+    #   codecov
+    #   responses
+responses==0.12.1
+    # via -r requirements-testing.in
+six==1.15.0
+    # via
+    #   responses
+    #   tox
+    #   virtualenv
+toml==0.10.2
+    # via
+    #   pytest
+    #   tox
+tox==3.23.0
+    # via -r requirements-testing.in
+urllib3==1.26.3
+    # via
+    #   requests
+    #   responses
+virtualenv==20.4.2
+    # via tox
