@@ -12,12 +12,6 @@ commands:
       - run: tox -e << parameters.env >> && codecov
 
 jobs:
-  test-py35:
-    docker:
-      - image: circleci/python:3.5
-    steps:
-      - run-tox:
-          env: "py35"
   test-py36:
     docker:
       - image: circleci/python:3.6
@@ -36,6 +30,12 @@ jobs:
     steps:
       - run-tox:
           env: "py38"
+  test-py39:
+    docker:
+      - image: circleci/python:3.9
+    steps:
+      - run-tox:
+          env: "py39"
 
   lint:
     docker:
@@ -47,8 +47,8 @@ workflows:
   version: 2
   build:
     jobs:
-      - test-py35
       - test-py36
       - test-py37
       - test-py38
+      - test-py39
       - lint
