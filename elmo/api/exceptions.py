@@ -34,7 +34,7 @@ class PermissionDenied(APIException):
     default_message = "You do not have permission to perform this action"
 
 
-class LockNotAcquired(Exception):
+class LockNotAcquired(BaseException):
     """Exception raised when a Lock() is required to run the function."""
 
     default_message = "System lock not acquired"
