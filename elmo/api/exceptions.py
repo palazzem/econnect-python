@@ -13,7 +13,7 @@ class BaseException(Exception):
 class ValidationError(BaseException):
     """Exception raised when a Validator fails."""
 
-    pass
+    default_message = "Client configuration is invalid."
 
 
 class QueryNotValid(BaseException):
