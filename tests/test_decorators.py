@@ -2,7 +2,7 @@ import pytest
 
 from threading import Lock
 
-from elmo.api.exceptions import PermissionDenied, LockNotAcquired
+from elmo.api.exceptions import MissingToken, LockNotAcquired
 from elmo.api.decorators import require_session, require_lock
 
 
@@ -35,10 +35,8 @@ def test_require_session_missing():
             return 42
 
     client = TestClient()
-    with pytest.raises(PermissionDenied) as excinfo:
+    with pytest.raises(MissingToken) as excinfo:
         client.action()
-
-    assert str(excinfo.value) == "You do not have permission to perform this action."
 
 
 def test_require_lock():

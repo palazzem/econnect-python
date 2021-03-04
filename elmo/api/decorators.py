@@ -1,4 +1,4 @@
-from .exceptions import PermissionDenied, LockNotAcquired
+from .exceptions import MissingToken, LockNotAcquired
 
 
 def require_session(func):
@@ -7,13 +7,13 @@ def require_session(func):
     `_session_id`.
 
     Raises:
-        InvalidSession: if a `session_id` is not available or expired.
+        MissingToken: if a `session_id` is not available.
     """
 
     def func_wrapper(*args, **kwargs):
         self = args[0]
         if self._session_id is None:
-            raise PermissionDenied("You do not have permission to perform this action.")
+            raise MissingToken
         else:
             return func(*args, **kwargs)
 

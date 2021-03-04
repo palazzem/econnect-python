@@ -28,10 +28,10 @@ class APIException(BaseException):
     default_message = "A server error occurred"
 
 
-class PermissionDenied(APIException):
-    """Exception raised when a user doesn't have permission to perform this action."""
+class MissingToken(APIException):
+    """Exception raised when a client is used without prior authentication."""
 
-    default_message = "You do not have permission to perform this action"
+    default_message = "No token is present. You must authenticate to use the client."
 
 
 class LockNotAcquired(BaseException):
