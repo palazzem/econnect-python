@@ -34,6 +34,12 @@ class MissingToken(APIException):
     default_message = "No token is present. You must authenticate to use the client."
 
 
+class ExpiredToken(APIException):
+    """Exception raised when a previously valid token is expired."""
+
+    default_message = "Used token is expired. You must authenticate again."
+
+
 class LockNotAcquired(BaseException):
     """Exception raised when a Lock() is required to run the function."""
 
