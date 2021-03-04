@@ -10,6 +10,12 @@ class BaseException(Exception):
         return str(self.message)
 
 
+class ValidationError(BaseException):
+    """Exception raised when a Validator fails."""
+
+    pass
+
+
 class QueryNotValid(BaseException):
     """Exception raised when a Query is not valid."""
 
