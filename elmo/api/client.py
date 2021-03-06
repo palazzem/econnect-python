@@ -1,5 +1,3 @@
-import time
-
 from threading import Lock
 from contextlib import contextmanager
 from functools import lru_cache
@@ -58,10 +56,9 @@ class ElmoClient(object):
         response = self._session.get(self._router.auth, params=payload)
         response.raise_for_status()
 
-        # Store the session_id and the token expiration (10 minutes)
+        # Store the session_id
         data = response.json()
         self._session_id = data["SessionId"]
-        self._session_expire = time.time() + 60 * 10
 
         # Register the redirect URL and try the authentication again
         if data["Redirect"]:

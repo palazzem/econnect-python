@@ -1,6 +1,5 @@
 import pytest
 import responses
-import time
 
 from requests.exceptions import HTTPError
 
@@ -64,8 +63,6 @@ def test_client_auth_success(server, client):
 
     assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
     assert client._session_id == "00000000-0000-0000-0000-000000000000"
-    # Ensures the token is valid for 10 minutes
-    assert int(client._session_expire) == int(time.time() + 60 * 10)
     assert len(server.calls) == 1
 
 

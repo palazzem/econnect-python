@@ -1,5 +1,3 @@
-import time
-
 from .exceptions import MissingToken, ExpiredToken, LockNotAcquired
 
 
@@ -17,9 +15,8 @@ def require_session(func):
         self = args[0]
         if self._session_id is None:
             raise MissingToken
-        elif self._session_expire < time.time():
-            raise ExpiredToken
         else:
+            # TODO: catch exceptions to detect ExpiredToken
             return func(*args, **kwargs)
 
     return func_wrapper

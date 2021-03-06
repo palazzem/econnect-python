@@ -41,25 +41,6 @@ def test_require_session_missing():
     assert "No token is present" in str(excinfo.value)
 
 
-def test_require_session_expired():
-    """Should fail if a session ID is expired."""
-
-    class TestClient(object):
-        def __init__(self):
-            # Session is available
-            self._session_id = "test"
-            self._session_expire = 1111111111
-
-        @require_session
-        def action(self):
-            return 42
-
-    client = TestClient()
-    with pytest.raises(ExpiredToken) as excinfo:
-        client.action()
-    assert "Used token is expired" in str(excinfo.value)
-
-
 def test_require_lock():
     """Should succeed if the lock has been acquired."""
 
