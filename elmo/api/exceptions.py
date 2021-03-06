@@ -13,7 +13,7 @@ class BaseException(Exception):
 class ValidationError(BaseException):
     """Exception raised when a Validator fails."""
 
-    pass
+    default_message = "Client configuration is invalid."
 
 
 class QueryNotValid(BaseException):
@@ -28,13 +28,19 @@ class APIException(BaseException):
     default_message = "A server error occurred"
 
 
-class PermissionDenied(APIException):
-    """Exception raised when a user doesn't have permission to perform this action."""
+class MissingToken(APIException):
+    """Exception raised when a client is used without prior authentication."""
 
-    default_message = "You do not have permission to perform this action"
+    default_message = "No token is present. You must authenticate to use the client."
 
 
-class LockNotAcquired(Exception):
+class InvalidToken(APIException):
+    """Exception raised when a previously valid token is not valid anymore."""
+
+    default_message = "Used token is not valid. You must authenticate again."
+
+
+class LockNotAcquired(BaseException):
     """Exception raised when a Lock() is required to run the function."""
 
     default_message = "System lock not acquired"

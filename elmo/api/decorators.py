@@ -1,4 +1,6 @@
-from .exceptions import PermissionDenied, LockNotAcquired
+from requests.exceptions import HTTPError
+
+from .exceptions import MissingToken, InvalidToken, LockNotAcquired
 
 
 def require_session(func):
@@ -7,15 +9,23 @@ def require_session(func):
     `_session_id`.
 
     Raises:
-        InvalidSession: if a `session_id` is not available or expired.
+        MissingToken: if a `session_id` is not available.
+        InvalidToken: if stored `session_id` is not valid (returns 401).
     """
 
     def func_wrapper(*args, **kwargs):
         self = args[0]
         if self._session_id is None:
-            raise PermissionDenied("You do not have permission to perform this action.")
+            raise MissingToken
         else:
-            return func(*args, **kwargs)
+            try:
+                return func(*args, **kwargs)
+            except HTTPError as e:
+                # Translate 401 into InvalidToken exception
+                # Bubble up any other exception
+                if e.response.status_code == 401:
+                    raise InvalidToken
+                raise e
 
     return func_wrapper
 

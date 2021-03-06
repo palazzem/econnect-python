@@ -32,6 +32,7 @@ class ElmoClient(object):
         self._domain = domain
         self._session = Session()
         self._session_id = session_id
+        self._session_expire = 0
         self._lock = Lock()
         self._strings = None
 

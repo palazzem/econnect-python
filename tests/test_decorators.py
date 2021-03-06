@@ -2,7 +2,10 @@ import pytest
 
 from threading import Lock
 
-from elmo.api.exceptions import PermissionDenied, LockNotAcquired
+from requests.models import Response
+from requests.exceptions import HTTPError
+
+from elmo.api.exceptions import MissingToken, InvalidToken, LockNotAcquired
 from elmo.api.decorators import require_session, require_lock
 
 
@@ -13,6 +16,7 @@ def test_require_session_present():
         def __init__(self):
             # Session is available
             self._session_id = "test"
+            self._session_expire = 9999999999
 
         @require_session
         def action(self):
@@ -35,10 +39,30 @@ def test_require_session_missing():
             return 42
 
     client = TestClient()
-    with pytest.raises(PermissionDenied) as excinfo:
+    with pytest.raises(MissingToken) as excinfo:
         client.action()
+    assert "No token is present" in str(excinfo.value)
 
-    assert str(excinfo.value) == "You do not have permission to perform this action."
+
+def test_require_session_invalid():
+    """Should fail if a session ID is not valid (API returns 401)."""
+
+    class TestClient(object):
+        def __init__(self):
+            # Session is available
+            self._session_id = "test"
+
+        @require_session
+        def action(self):
+            # Raise a 401 to emulate lack of valid authentication credentials
+            r = Response()
+            r.status_code = 401
+            raise HTTPError(response=r)
+
+    client = TestClient()
+    with pytest.raises(InvalidToken) as excinfo:
+        client.action()
+    assert "Used token is not valid" in str(excinfo.value)
 
 
 def test_require_lock():

@@ -6,7 +6,7 @@ from elmo.api.client import ElmoClient
 
 @pytest.fixture
 def client():
-    """Create an ElmoClient with defaults."""
+    """Create an ElmoClient with unlimited expiration time."""
     client = ElmoClient("https://example.com", "domain")
     yield client
 
