@@ -1,4 +1,6 @@
-from .exceptions import MissingToken, ExpiredToken, LockNotAcquired
+from requests.exceptions import HTTPError
+
+from .exceptions import MissingToken, InvalidToken, LockNotAcquired
 
 
 def require_session(func):
@@ -8,7 +10,7 @@ def require_session(func):
 
     Raises:
         MissingToken: if a `session_id` is not available.
-        ExpiredToken: if stored `session_id` is expired.
+        InvalidToken: if stored `session_id` is not valid (returns 401).
     """
 
     def func_wrapper(*args, **kwargs):
@@ -16,8 +18,14 @@ def require_session(func):
         if self._session_id is None:
             raise MissingToken
         else:
-            # TODO: catch exceptions to detect ExpiredToken
-            return func(*args, **kwargs)
+            try:
+                return func(*args, **kwargs)
+            except HTTPError as e:
+                # Translate 401 into InvalidToken exception
+                # Bubble up any other exception
+                if e.response.status_code == 401:
+                    raise InvalidToken
+                raise e
 
     return func_wrapper
 
