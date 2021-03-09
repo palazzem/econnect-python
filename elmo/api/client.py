@@ -3,10 +3,11 @@ from contextlib import contextmanager
 from functools import lru_cache
 
 from requests import Session
+from requests.exceptions import HTTPError
 
 from .router import Router
 from .decorators import require_session, require_lock
-from .exceptions import QueryNotValid
+from .exceptions import QueryNotValid, CredentialError
 
 from .. import query as q
 
@@ -49,12 +50,18 @@ class ElmoClient(object):
             The access token retrieved from the API. The token is also cached in
             the `ElmoClient` instance.
         """
-        payload = {"username": username, "password": password}
-        if self._domain is not None:
-            payload["domain"] = self._domain
+        try:
+            payload = {"username": username, "password": password}
+            if self._domain is not None:
+                payload["domain"] = self._domain
 
-        response = self._session.get(self._router.auth, params=payload)
-        response.raise_for_status()
+            response = self._session.get(self._router.auth, params=payload)
+            response.raise_for_status()
+        except HTTPError as err:
+            # 403: Incorrect username or password
+            if err.response.status_code == 403:
+                raise CredentialError
+            raise err
 
         # Store the session_id
         data = response.json()

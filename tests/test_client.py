@@ -5,7 +5,7 @@ from requests.exceptions import HTTPError
 
 from elmo import query
 from elmo.api.client import ElmoClient
-from elmo.api.exceptions import LockNotAcquired, QueryNotValid
+from elmo.api.exceptions import LockNotAcquired, QueryNotValid, CredentialError
 
 
 def test_client_constructor_default():
@@ -75,11 +75,10 @@ def test_client_auth_forbidden(server, client):
         status=403,
     )
 
-    with pytest.raises(HTTPError) as excinfo:
+    with pytest.raises(CredentialError):
         client.auth("test", "test")
     assert client._session_id is None
     assert len(server.calls) == 1
-    assert "403 Client Error: Forbidden" in str(excinfo.value)
 
 
 def test_client_auth_unknown_error(server, client):

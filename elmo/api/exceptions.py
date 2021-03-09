@@ -28,6 +28,12 @@ class APIException(BaseException):
     default_message = "A server error occurred"
 
 
+class CredentialError(APIException):
+    """Exception raise when used credentials are not correct."""
+
+    default_message = "Username or password are not correct"
+
+
 class MissingToken(APIException):
     """Exception raised when a client is used without prior authentication."""
 
