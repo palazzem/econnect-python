@@ -11,6 +11,7 @@ from elmo.api.exceptions import (
     CredentialError,
     InvalidToken,
     CodeError,
+    InvalidSector,
 )
 
 
@@ -441,6 +442,28 @@ def test_client_arm_fails_missing_session(server, client):
     assert len(server.calls) == 1
 
 
+def test_client_arm_fails_wrong_sector(server, client):
+    """Should fail if a not existing sector is used."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": false
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(InvalidSector):
+        assert client.arm([200])
+
+
 def test_client_arm_fails_unknown_error(server, client):
     """Should fail if an unknown error happens."""
     server.add(
@@ -539,6 +562,28 @@ def test_client_disarm_fails_missing_session(server, client):
     with pytest.raises(InvalidToken):
         client.disarm()
     assert len(server.calls) == 1
+
+
+def test_client_disarm_fails_wrong_sector(server, client):
+    """Should fail if a not existing sector is used."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": false
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(InvalidSector):
+        assert client.disarm([200])
 
 
 def test_client_disarm_fails_unknown_error(server, client):

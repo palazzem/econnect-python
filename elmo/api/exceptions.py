@@ -56,3 +56,9 @@ class CodeError(APIException):
     """Exception raised when used panel code is not correct."""
 
     default_message = "Digited panel code is not correct"
+
+
+class InvalidSector(APIException):
+    """Exception raised when armed/disarmed sector doesn't exist."""
+
+    default_message = "Selected sector doesn't exist."

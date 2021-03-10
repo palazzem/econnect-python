@@ -7,7 +7,7 @@ from requests.exceptions import HTTPError
 
 from .router import Router
 from .decorators import require_session, require_lock
-from .exceptions import QueryNotValid, CredentialError, CodeError
+from .exceptions import QueryNotValid, CredentialError, CodeError, InvalidSector
 
 from .. import query as q
 
@@ -176,9 +176,23 @@ class ElmoClient(object):
             ]
 
         # Arming multiple sectors requires multiple requests
+        errors = []
         for payload in payloads:
             response = self._session.post(self._router.send_command, data=payload)
             response.raise_for_status()
+
+            # A not existing sector returns 200 with a fail state
+            body = response.json()
+            if not body[0]["Successful"]:
+                errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_sectors = ",".join(str(x) for x in errors)
+            raise InvalidSector(
+                "Selected sectors doesn't exist: {}".format(invalid_sectors)
+            )
+
         return True
 
     @require_session
@@ -226,9 +240,23 @@ class ElmoClient(object):
             ]
 
         # Disarming multiple sectors requires multiple requests
+        errors = []
         for payload in payloads:
             response = self._session.post(self._router.send_command, data=payload)
             response.raise_for_status()
+
+            # A not existing sector returns 200 with a fail state
+            body = response.json()
+            if not body[0]["Successful"]:
+                errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_sectors = ",".join(str(x) for x in errors)
+            raise InvalidSector(
+                "Selected sectors doesn't exist: {}".format(invalid_sectors)
+            )
+
         return True
 
     @lru_cache(maxsize=1)
