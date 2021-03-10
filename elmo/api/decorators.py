@@ -43,8 +43,7 @@ def require_lock(func):
         self = args[0]
         # If the Lock() acquisition succeed it means a locking is not occurring
         # and so bail-out the execution (and release the lock).
-        if self._lock.acquire(False):
-            self._lock.release()
+        if not self._lock.locked():
             raise LockNotAcquired("A lock must be acquired via `lock()` method.")
         else:
             return func(*args, **kwargs)
