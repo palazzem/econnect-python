@@ -89,6 +89,46 @@ class ElmoClient(object):
 
         return self._session_id
 
+    @require_session
+    def poll(self):
+        """Use a long-polling API to identify when something changes in the
+        system. Calling this method blocks the thread for 15 seconds, waiting
+        for a backend response that happens only when the alarm system status
+        changes. Don't call this method from your main thread otherwise the
+        application hangs.
+
+        When the API returns that something is changed, you must call the
+        `client.check()` to update your identifiers. Missing this step means
+        that the next time you will call `client.poll()` the API returns immediately
+        with an old result.
+
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A dictionary that includes what items have been changed. The following
+            structure means that `areas` are not changed, while inputs are:
+                {
+                    "areas": False,
+                    "inputs": True,
+                }
+        """
+        payload = {
+            "sessionId": self._session_id,
+            "Areas": self._latestEntryId[q.SECTORS],
+            "Inputs": self._latestEntryId[q.INPUTS],
+            "CanElevate": "1",
+            "ConnectionStatus": "1",
+        }
+        response = self._session.post(self._router.update, data=payload)
+        response.raise_for_status()
+
+        state = response.json()
+        return {
+            "has_changes": state["HasChanges"],
+            "areas": state["Areas"],
+            "inputs": state["Inputs"],
+        }
+
     @contextmanager
     @require_session
     def lock(self, code):
