@@ -7,7 +7,13 @@ from requests.exceptions import HTTPError
 
 from .router import Router
 from .decorators import require_session, require_lock
-from .exceptions import QueryNotValid, CredentialError, CodeError, InvalidSector
+from .exceptions import (
+    QueryNotValid,
+    CredentialError,
+    CodeError,
+    InvalidSector,
+    LockError,
+)
 
 from .. import query as q
 
@@ -88,13 +94,24 @@ class ElmoClient(object):
             code: the alarm code used to obtain the lock.
         Raises:
             CodeError: if used `code` is not valid.
+            LockError: if the server is refusing to assign the lock. It could mean
+            that an unexpected issue happened, or that another application is
+            holding the lock. It's possible to retry the operation.
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A client instance with an acquired lock.
         """
         payload = {"userId": 1, "password": code, "sessionId": self._session_id}
         response = self._session.post(self._router.lock, data=payload)
-        response.raise_for_status()
+
+        try:
+            response.raise_for_status()
+        except HTTPError as err:
+            # 403: Not possible to obtain the lock, probably because of a race condition
+            # with another application
+            if err.response.status_code == 403:
+                raise LockError
+            raise err
 
         # A wrong code returns 200 with a fail state
         body = response.json()

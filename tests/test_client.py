@@ -12,6 +12,7 @@ from elmo.api.exceptions import (
     InvalidToken,
     CodeError,
     InvalidSector,
+    LockError,
 )
 
 
@@ -232,6 +233,18 @@ def test_client_lock_wrong_code(server, client, mocker):
     client._session_id = "test"
 
     with pytest.raises(CodeError):
+        with client.lock("test"):
+            pass
+    assert len(server.calls) == 1
+
+
+def test_client_lock_called_twice(server, client, mocker):
+    """Should raise a CodeError if Lock() is called twice."""
+    server.add(responses.POST, "https://example.com/api/panel/syncLogin", status=403)
+    mocker.patch.object(client, "unlock")
+    client._session_id = "test"
+
+    with pytest.raises(LockError):
         with client.lock("test"):
             pass
     assert len(server.calls) == 1

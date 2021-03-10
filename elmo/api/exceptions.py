@@ -52,6 +52,12 @@ class LockNotAcquired(BaseException):
     default_message = "System lock not acquired"
 
 
+class LockError(APIException):
+    """Exception raised when it's not possible to obtain the Lock()."""
+
+    default_message = "Unable to obtain the Lock()."
+
+
 class CodeError(APIException):
     """Exception raised when used panel code is not correct."""
 
