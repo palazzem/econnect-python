@@ -119,8 +119,10 @@ class ElmoClient(object):
             raise CodeError
 
         self._lock.acquire()
-        yield self
-        self.unlock()
+        try:
+            yield self
+        finally:
+            self.unlock()
 
     @require_session
     @require_lock

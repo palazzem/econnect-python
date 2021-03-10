@@ -289,6 +289,28 @@ def test_client_lock_calls_unlock(server, client, mocker):
     assert len(server.calls) == 1
 
 
+def test_client_lock_and_unlock_with_exception(server, client, mocker):
+    """Should call unlock() even if an exception is raised in the block."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": true
+        }
+    ]"""
+    server.add(
+        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
+    )
+    mocker.patch.object(client, "unlock")
+    client._session_id = "test"
+
+    with pytest.raises(Exception):
+        with client.lock("test"):
+            raise Exception
+    assert client.unlock.called is True
+    assert len(server.calls) == 1
+
+
 def test_client_unlock(server, client):
     """Should call the API and release the system lock."""
     html = """[
