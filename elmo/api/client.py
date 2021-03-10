@@ -40,12 +40,6 @@ class ElmoClient(object):
         self._session = Session()
         self._session_id = session_id
         self._lock = Lock()
-        # TODO: this item doesn't belong to the client. Split the stateful
-        # implementation from the client, so that it can stay stateless.
-        self._latestEntryId = {
-            q.SECTORS: 0,
-            q.INPUTS: 0,
-        }
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses
@@ -88,7 +82,7 @@ class ElmoClient(object):
         return self._session_id
 
     @require_session
-    def poll(self):
+    def poll(self, ids):
         """Use a long-polling API to identify when something changes in the
         system. Calling this method blocks the thread for 15 seconds, waiting
         for a backend response that happens only when the alarm system status
@@ -112,8 +106,8 @@ class ElmoClient(object):
         """
         payload = {
             "sessionId": self._session_id,
-            "Areas": self._latestEntryId[q.SECTORS],
-            "Inputs": self._latestEntryId[q.INPUTS],
+            "Areas": ids[q.SECTORS],
+            "Inputs": ids[q.INPUTS],
             "CanElevate": "1",
             "ConnectionStatus": "1",
         }
@@ -390,7 +384,7 @@ class ElmoClient(object):
         entries = response.json()
 
         # The last entry ID is used in `self.poll()` long-polling API
-        self._latestEntryId[query] = entries[-1]["Id"]
+        lastId = entries[-1]["Id"]
 
         # Massage data
         for entry in entries:
@@ -407,7 +401,7 @@ class ElmoClient(object):
                 else:
                     not_active.append(item)
 
-        return active, not_active
+        return active, not_active, lastId
 
     @require_session
     def check(self):
@@ -433,8 +427,8 @@ class ElmoClient(object):
             }
         """
         # Retrieve sectors and inputs
-        sectors_armed, sectors_disarmed = self.query(q.SECTORS)
-        inputs_alerted, inputs_wait = self.query(q.INPUTS)
+        sectors_armed, sectors_disarmed, lastSector = self.query(q.SECTORS)
+        inputs_alerted, inputs_wait, lastInput = self.query(q.INPUTS)
 
         return {
             "sectors_armed": sectors_armed,

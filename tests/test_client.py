@@ -223,12 +223,24 @@ def test_client_poll(server, client):
     """
     server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
     client._session_id = "test"
+    ids = {
+        query.SECTORS: 42,
+        query.INPUTS: 4242,
+    }
 
-    state = client.poll()
+    state = client.poll(ids)
     assert len(state.keys()) == 3
+    # Check response
     assert state["has_changes"] is False
     assert state["inputs"] is False
     assert state["areas"] is False
+    # Check request
+    body = server.calls[0].request.body.split("&")
+    assert "sessionId=test" in body
+    assert "Areas=42" in body
+    assert "Inputs=4242" in body
+    assert "CanElevate=1" in body
+    assert "ConnectionStatus=1" in body
 
 
 def test_client_poll_with_changes(server, client):
@@ -257,53 +269,16 @@ def test_client_poll_with_changes(server, client):
     """
     server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
     client._session_id = "test"
-
-    state = client.poll()
-    assert len(state.keys()) == 3
-    assert state["has_changes"] is True
-    assert state["inputs"] is True
-    assert state["areas"] is True
-
-
-def test_client_poll_with_updated_ids(server, client):
-    """Should use internal IDs to make the call."""
-    html = """
-        {
-            "ConnectionStatus": false,
-            "CanElevate": false,
-            "LoggedIn": false,
-            "LoginInProgress": false,
-            "Areas": true,
-            "Events": false,
-            "Inputs": true,
-            "Outputs": false,
-            "Anomalies": false,
-            "ReadStringsInProgress": false,
-            "ReadStringPercentage": 0,
-            "Strings": 0,
-            "ManagedAccounts": false,
-            "Temperature": false,
-            "StatusAdv": false,
-            "Images": false,
-            "AdditionalInfoSupported": true,
-            "HasChanges": true
-        }
-    """
-    server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
-    client._session_id = "test"
-    client._latestEntryId = {
+    ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
     }
 
-    client.poll()
-    assert len(server.calls) == 1
-    body = server.calls[0].request.body.split("&")
-    assert "sessionId=test" in body
-    assert "Areas=42" in body
-    assert "Inputs=4242" in body
-    assert "CanElevate=1" in body
-    assert "ConnectionStatus=1" in body
+    state = client.poll(ids)
+    assert len(state.keys()) == 3
+    assert state["has_changes"] is True
+    assert state["inputs"] is True
+    assert state["areas"] is True
 
 
 def test_client_poll_unknown_error(server, client):
@@ -314,11 +289,14 @@ def test_client_poll_unknown_error(server, client):
         body="Server Error",
         status=500,
     )
-
     client._session_id = "test"
+    ids = {
+        query.SECTORS: 42,
+        query.INPUTS: 4242,
+    }
 
     with pytest.raises(HTTPError):
-        client.poll()
+        client.poll(ids)
     assert len(server.calls) == 1
 
 
@@ -873,7 +851,7 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
         9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
     }
     client._session_id = "test"
-    sectors_armed, sectors_disarmed = client.query(query.SECTORS)
+    sectors_armed, sectors_disarmed, lastId = client.query(query.SECTORS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
@@ -885,10 +863,10 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
         {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
     ]
     # Element 4 is filtered out but the query must store that value
-    assert client._latestEntryId[query.SECTORS] == 4
+    assert lastId == 4
 
 
-def test_client_get_inputs(server, client, inputs_json, mocker):
+def test_client_get_inputs_status(server, client, inputs_json, mocker):
     """Should query a Elmo system to retrieve inputs status."""
     # query() depends on _get_descriptions()
     server.add(
@@ -899,7 +877,7 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
         10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
     }
     client._session_id = "test"
-    inputs_alerted, inputs_wait = client.query(query.INPUTS)
+    inputs_alerted, inputs_wait, lastId = client.query(query.INPUTS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
@@ -911,7 +889,7 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
         {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
     ]
     # Element 4 is filtered out but the query must store that value
-    assert client._latestEntryId[query.INPUTS] == 4
+    assert lastId == 4
 
 
 def test_client_query_not_valid(client):
