@@ -200,7 +200,7 @@ def test_client_lock(server, client, mocker):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -220,7 +220,7 @@ def test_client_lock_forbidden(server, client, mocker):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": False,
+            "Successful": false
         }
     ]"""
     server.add(
@@ -255,7 +255,16 @@ def test_client_lock_unknown_error(server, client, mocker):
 
 def test_client_lock_calls_unlock(server, client, mocker):
     """Should call unlock() when exiting from the context."""
-    server.add(responses.POST, "https://example.com/api/panel/syncLogin")
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": true
+        }
+    ]"""
+    server.add(
+        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
+    )
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
@@ -271,7 +280,7 @@ def test_client_unlock(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -304,7 +313,7 @@ def test_client_unlock_fails_forbidden(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": False,
+            "Successful": false
         }
     ]"""
     server.add(
@@ -329,7 +338,7 @@ def test_client_unlock_fails_unexpected_error(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": False,
+            "Successful": false
         }
     ]"""
     server.add(
@@ -353,7 +362,7 @@ def test_client_arm(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -380,7 +389,7 @@ def test_client_arm_sectors(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -453,7 +462,7 @@ def test_client_disarm(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -480,7 +489,7 @@ def test_client_disarm_sectors(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
