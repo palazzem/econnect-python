@@ -97,3 +97,23 @@ def test_require_lock_fails():
     client = TestClient()
     with pytest.raises(LockNotAcquired):
         client.action()
+
+
+def test_require_lock_not_valid():
+    """Should fail if the obtained lock is not valid anymore (API returns 401)."""
+
+    class TestClient(object):
+        def __init__(self):
+            # Lock attribute
+            self._lock = Lock()
+
+        @require_lock
+        def action(self):
+            # Raise a 403 to emulate lack of a valid Lock()
+            r = Response()
+            r.status_code = 403
+            raise HTTPError(response=r)
+
+    client = TestClient()
+    with pytest.raises(LockNotAcquired):
+        client.action()
