@@ -925,37 +925,3 @@ def test_client_query_error(server, client, mocker):
     mocker.patch.object(client, "_get_descriptions")
     with pytest.raises(HTTPError):
         client.query(query.SECTORS)
-
-
-def test_client_check_success(server, client, sectors_json, inputs_json, mocker):
-    """Should check the global status of an Elmo System. This test runs
-    as a full test and doesn't mock the `client.query()` method. Without
-    mocks, the contract from `client.query()` is verified.
-    """
-    # Check depends on querying sectors/inputs endpoints
-    server.add(
-        responses.POST, "https://example.com/api/areas", body=sectors_json, status=200
-    )
-    server.add(
-        responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200
-    )
-    mocker.patch.object(client, "_get_descriptions")
-    # Mock descriptions list
-    client._get_descriptions.return_value = {
-        9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
-        10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
-    }
-    client._session_id = "test"
-    results = client.check()
-    assert results == {
-        "sectors_armed": [
-            {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
-            {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
-        ],
-        "sectors_disarmed": [{"element": 3, "id": 3, "index": 2, "name": "Kitchen"}],
-        "inputs_alerted": [
-            {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
-            {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},
-        ],
-        "inputs_wait": [{"element": 3, "id": 3, "index": 2, "name": "Door entryway"}],
-    }

@@ -1,6 +1,7 @@
 import pytest
 import responses
 
+from elmo.devices import AlarmDevice
 from elmo.api.client import ElmoClient
 
 
@@ -9,6 +10,13 @@ def client():
     """Create an ElmoClient with unlimited expiration time."""
     client = ElmoClient("https://example.com", "domain")
     yield client
+
+
+@pytest.fixture
+def device(client):
+    """Create an AlarmDevice with a mocked client."""
+    device = AlarmDevice(connection=client)
+    yield device
 
 
 @pytest.fixture
