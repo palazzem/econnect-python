@@ -207,7 +207,7 @@ class ElmoClient(object):
         if errors:
             invalid_sectors = ",".join(str(x) for x in errors)
             raise InvalidSector(
-                "Selected sectors doesn't exist: {}".format(invalid_sectors)
+                "Selected sectors don't exist: {}".format(invalid_sectors)
             )
 
         return True
@@ -271,7 +271,7 @@ class ElmoClient(object):
         if errors:
             invalid_sectors = ",".join(str(x) for x in errors)
             raise InvalidSector(
-                "Selected sectors doesn't exist: {}".format(invalid_sectors)
+                "Selected sectors don't exist: {}".format(invalid_sectors)
             )
 
         return True
