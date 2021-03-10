@@ -5,7 +5,15 @@ from requests.exceptions import HTTPError
 
 from elmo import query
 from elmo.api.client import ElmoClient
-from elmo.api.exceptions import LockNotAcquired, QueryNotValid
+from elmo.api.exceptions import (
+    LockNotAcquired,
+    QueryNotValid,
+    CredentialError,
+    InvalidToken,
+    CodeError,
+    InvalidSector,
+    LockError,
+)
 
 
 def test_client_constructor_default():
@@ -75,11 +83,10 @@ def test_client_auth_forbidden(server, client):
         status=403,
     )
 
-    with pytest.raises(HTTPError) as excinfo:
+    with pytest.raises(CredentialError):
         client.auth("test", "test")
     assert client._session_id is None
     assert len(server.calls) == 1
-    assert "403 Client Error: Forbidden" in str(excinfo.value)
 
 
 def test_client_auth_unknown_error(server, client):
@@ -196,7 +203,7 @@ def test_client_lock(server, client, mocker):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -210,22 +217,34 @@ def test_client_lock(server, client, mocker):
     assert len(server.calls) == 1
 
 
-def test_client_lock_forbidden(server, client, mocker):
-    """Should raise an Exception if credentials are not correct."""
+def test_client_lock_wrong_code(server, client, mocker):
+    """Should raise a CodeError if inserted code is not correct."""
     html = """[
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": False,
+            "Successful": false
         }
     ]"""
     server.add(
-        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=403
+        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
     )
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
-    with pytest.raises(HTTPError):
+    with pytest.raises(CodeError):
+        with client.lock("test"):
+            pass
+    assert len(server.calls) == 1
+
+
+def test_client_lock_called_twice(server, client, mocker):
+    """Should raise a CodeError if Lock() is called twice."""
+    server.add(responses.POST, "https://example.com/api/panel/syncLogin", status=403)
+    mocker.patch.object(client, "unlock")
+    client._session_id = "test"
+
+    with pytest.raises(LockError):
         with client.lock("test"):
             pass
     assert len(server.calls) == 1
@@ -251,7 +270,16 @@ def test_client_lock_unknown_error(server, client, mocker):
 
 def test_client_lock_calls_unlock(server, client, mocker):
     """Should call unlock() when exiting from the context."""
-    server.add(responses.POST, "https://example.com/api/panel/syncLogin")
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": true
+        }
+    ]"""
+    server.add(
+        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
+    )
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
@@ -267,7 +295,7 @@ def test_client_unlock(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -300,7 +328,7 @@ def test_client_unlock_fails_forbidden(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": False,
+            "Successful": false
         }
     ]"""
     server.add(
@@ -313,9 +341,9 @@ def test_client_unlock_fails_forbidden(server, client):
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(HTTPError):
+    with pytest.raises(LockNotAcquired):
         client.unlock()
-    assert not client._lock.acquire(False)
+    assert not client._lock.locked()
     assert len(server.calls) == 1
 
 
@@ -325,7 +353,7 @@ def test_client_unlock_fails_unexpected_error(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": False,
+            "Successful": false
         }
     ]"""
     server.add(
@@ -349,7 +377,7 @@ def test_client_arm(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -376,7 +404,7 @@ def test_client_arm_sectors(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -414,25 +442,39 @@ def test_client_arm_fails_missing_lock(server, client):
 
 def test_client_arm_fails_missing_session(server, client):
     """Should fail if a wrong access token is used."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        status=401,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(InvalidToken):
+        client.arm()
+    assert len(server.calls) == 1
+
+
+def test_client_arm_fails_wrong_sector(server, client):
+    """Should fail if a not existing sector is used."""
     html = """[
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": False,
+            "Successful": false
         }
     ]"""
     server.add(
         responses.POST,
         "https://example.com/api/panel/syncSendCommand",
         body=html,
-        status=403,
+        status=200,
     )
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(HTTPError):
-        client.arm()
-    assert len(server.calls) == 1
+    with pytest.raises(InvalidSector):
+        assert client.arm([200])
 
 
 def test_client_arm_fails_unknown_error(server, client):
@@ -457,7 +499,7 @@ def test_client_disarm(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -484,7 +526,7 @@ def test_client_disarm_sectors(server, client):
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": True,
+            "Successful": true
         }
     ]"""
     server.add(
@@ -522,25 +564,39 @@ def test_client_disarm_fails_missing_lock(server, client):
 
 def test_client_disarm_fails_missing_session(server, client):
     """Should fail if a wrong access token is used."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        status=401,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(InvalidToken):
+        client.disarm()
+    assert len(server.calls) == 1
+
+
+def test_client_disarm_fails_wrong_sector(server, client):
+    """Should fail if a not existing sector is used."""
     html = """[
         {
             "Poller": {"Poller": 1, "Panel": 1},
             "CommandId": 5,
-            "Successful": False,
+            "Successful": false
         }
     ]"""
     server.add(
         responses.POST,
         "https://example.com/api/panel/syncSendCommand",
         body=html,
-        status=403,
+        status=200,
     )
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(HTTPError):
-        client.disarm()
-    assert len(server.calls) == 1
+    with pytest.raises(InvalidSector):
+        assert client.disarm([200])
 
 
 def test_client_disarm_fails_unknown_error(server, client):

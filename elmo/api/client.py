@@ -3,10 +3,17 @@ from contextlib import contextmanager
 from functools import lru_cache
 
 from requests import Session
+from requests.exceptions import HTTPError
 
 from .router import Router
 from .decorators import require_session, require_lock
-from .exceptions import QueryNotValid
+from .exceptions import (
+    QueryNotValid,
+    CredentialError,
+    CodeError,
+    InvalidSector,
+    LockError,
+)
 
 from .. import query as q
 
@@ -49,12 +56,18 @@ class ElmoClient(object):
             The access token retrieved from the API. The token is also cached in
             the `ElmoClient` instance.
         """
-        payload = {"username": username, "password": password}
-        if self._domain is not None:
-            payload["domain"] = self._domain
+        try:
+            payload = {"username": username, "password": password}
+            if self._domain is not None:
+                payload["domain"] = self._domain
 
-        response = self._session.get(self._router.auth, params=payload)
-        response.raise_for_status()
+            response = self._session.get(self._router.auth, params=payload)
+            response.raise_for_status()
+        except HTTPError as err:
+            # 403: Incorrect username or password
+            if err.response.status_code == 403:
+                raise CredentialError
+            raise err
 
         # Store the session_id
         data = response.json()
@@ -80,13 +93,30 @@ class ElmoClient(object):
         Args:
             code: the alarm code used to obtain the lock.
         Raises:
+            CodeError: if used `code` is not valid.
+            LockError: if the server is refusing to assign the lock. It could mean
+            that an unexpected issue happened, or that another application is
+            holding the lock. It's possible to retry the operation.
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A client instance with an acquired lock.
         """
         payload = {"userId": 1, "password": code, "sessionId": self._session_id}
         response = self._session.post(self._router.lock, data=payload)
-        response.raise_for_status()
+
+        try:
+            response.raise_for_status()
+        except HTTPError as err:
+            # 403: Not possible to obtain the lock, probably because of a race condition
+            # with another application
+            if err.response.status_code == 403:
+                raise LockError
+            raise err
+
+        # A wrong code returns 200 with a fail state
+        body = response.json()
+        if not body[0]["Successful"]:
+            raise CodeError
 
         self._lock.acquire()
         yield self
@@ -163,9 +193,23 @@ class ElmoClient(object):
             ]
 
         # Arming multiple sectors requires multiple requests
+        errors = []
         for payload in payloads:
             response = self._session.post(self._router.send_command, data=payload)
             response.raise_for_status()
+
+            # A not existing sector returns 200 with a fail state
+            body = response.json()
+            if not body[0]["Successful"]:
+                errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_sectors = ",".join(str(x) for x in errors)
+            raise InvalidSector(
+                "Selected sectors don't exist: {}".format(invalid_sectors)
+            )
+
         return True
 
     @require_session
@@ -213,9 +257,23 @@ class ElmoClient(object):
             ]
 
         # Disarming multiple sectors requires multiple requests
+        errors = []
         for payload in payloads:
             response = self._session.post(self._router.send_command, data=payload)
             response.raise_for_status()
+
+            # A not existing sector returns 200 with a fail state
+            body = response.json()
+            if not body[0]["Successful"]:
+                errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_sectors = ",".join(str(x) for x in errors)
+            raise InvalidSector(
+                "Selected sectors don't exist: {}".format(invalid_sectors)
+            )
+
         return True
 
     @lru_cache(maxsize=1)

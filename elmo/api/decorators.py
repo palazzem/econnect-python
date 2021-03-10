@@ -43,10 +43,20 @@ def require_lock(func):
         self = args[0]
         # If the Lock() acquisition succeed it means a locking is not occurring
         # and so bail-out the execution (and release the lock).
-        if self._lock.acquire(False):
-            self._lock.release()
+        # TODO: Lock() state must be moved outside of this client, so that
+        # it represents a stateless client.
+        if not self._lock.locked():
             raise LockNotAcquired("A lock must be acquired via `lock()` method.")
         else:
-            return func(*args, **kwargs)
+            try:
+                return func(*args, **kwargs)
+            except HTTPError as err:
+                # 403: Method has been called without obtaining the server lock
+                if err.response.status_code == 403:
+                    self._lock.release()
+                    raise LockNotAcquired(
+                        "A lock must be acquired via `lock()` method."
+                    )
+                raise err
 
     return func_wrapper

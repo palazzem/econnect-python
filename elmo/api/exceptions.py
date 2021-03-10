@@ -28,6 +28,12 @@ class APIException(BaseException):
     default_message = "A server error occurred"
 
 
+class CredentialError(APIException):
+    """Exception raised when used credentials are not correct."""
+
+    default_message = "Username or password are not correct"
+
+
 class MissingToken(APIException):
     """Exception raised when a client is used without prior authentication."""
 
@@ -44,3 +50,21 @@ class LockNotAcquired(BaseException):
     """Exception raised when a Lock() is required to run the function."""
 
     default_message = "System lock not acquired"
+
+
+class LockError(APIException):
+    """Exception raised when it's not possible to obtain the Lock()."""
+
+    default_message = "Unable to obtain the Lock()."
+
+
+class CodeError(APIException):
+    """Exception raised when used panel code is not correct."""
+
+    default_message = "Digited panel code is not correct"
+
+
+class InvalidSector(APIException):
+    """Exception raised when armed/disarmed sector doesn't exist."""
+
+    default_message = "Selected sector doesn't exist."
