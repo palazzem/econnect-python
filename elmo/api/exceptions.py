@@ -29,7 +29,7 @@ class APIException(BaseException):
 
 
 class CredentialError(APIException):
-    """Exception raise when used credentials are not correct."""
+    """Exception raised when used credentials are not correct."""
 
     default_message = "Username or password are not correct"
 
@@ -50,3 +50,9 @@ class LockNotAcquired(BaseException):
     """Exception raised when a Lock() is required to run the function."""
 
     default_message = "System lock not acquired"
+
+
+class CodeError(APIException):
+    """Exception raised when used panel code is not correct."""
+
+    default_message = "Digited panel code is not correct"

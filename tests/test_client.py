@@ -10,6 +10,7 @@ from elmo.api.exceptions import (
     QueryNotValid,
     CredentialError,
     InvalidToken,
+    CodeError,
 )
 
 
@@ -214,8 +215,8 @@ def test_client_lock(server, client, mocker):
     assert len(server.calls) == 1
 
 
-def test_client_lock_forbidden(server, client, mocker):
-    """Should raise an Exception if credentials are not correct."""
+def test_client_lock_wrong_code(server, client, mocker):
+    """Should raise a CodeError if inserted code is not correct."""
     html = """[
         {
             "Poller": {"Poller": 1, "Panel": 1},
@@ -224,12 +225,12 @@ def test_client_lock_forbidden(server, client, mocker):
         }
     ]"""
     server.add(
-        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=403
+        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
     )
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
-    with pytest.raises(HTTPError):
+    with pytest.raises(CodeError):
         with client.lock("test"):
             pass
     assert len(server.calls) == 1

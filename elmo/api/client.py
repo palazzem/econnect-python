@@ -7,7 +7,7 @@ from requests.exceptions import HTTPError
 
 from .router import Router
 from .decorators import require_session, require_lock
-from .exceptions import QueryNotValid, CredentialError
+from .exceptions import QueryNotValid, CredentialError, CodeError
 
 from .. import query as q
 
@@ -87,6 +87,7 @@ class ElmoClient(object):
         Args:
             code: the alarm code used to obtain the lock.
         Raises:
+            CodeError: if used `code` is not valid.
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A client instance with an acquired lock.
@@ -94,6 +95,11 @@ class ElmoClient(object):
         payload = {"userId": 1, "password": code, "sessionId": self._session_id}
         response = self._session.post(self._router.lock, data=payload)
         response.raise_for_status()
+
+        # A wrong code returns 200 with a fail state
+        body = response.json()
+        if not body[0]["Successful"]:
+            raise CodeError
 
         self._lock.acquire()
         yield self
