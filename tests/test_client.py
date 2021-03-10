@@ -5,7 +5,12 @@ from requests.exceptions import HTTPError
 
 from elmo import query
 from elmo.api.client import ElmoClient
-from elmo.api.exceptions import LockNotAcquired, QueryNotValid, CredentialError
+from elmo.api.exceptions import (
+    LockNotAcquired,
+    QueryNotValid,
+    CredentialError,
+    InvalidToken,
+)
 
 
 def test_client_constructor_default():
@@ -312,9 +317,9 @@ def test_client_unlock_fails_forbidden(server, client):
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(HTTPError):
+    with pytest.raises(LockNotAcquired):
         client.unlock()
-    assert not client._lock.acquire(False)
+    assert not client._lock.locked()
     assert len(server.calls) == 1
 
 
@@ -413,23 +418,15 @@ def test_client_arm_fails_missing_lock(server, client):
 
 def test_client_arm_fails_missing_session(server, client):
     """Should fail if a wrong access token is used."""
-    html = """[
-        {
-            "Poller": {"Poller": 1, "Panel": 1},
-            "CommandId": 5,
-            "Successful": False,
-        }
-    ]"""
     server.add(
         responses.POST,
         "https://example.com/api/panel/syncSendCommand",
-        body=html,
-        status=403,
+        status=401,
     )
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(HTTPError):
+    with pytest.raises(InvalidToken):
         client.arm()
     assert len(server.calls) == 1
 
@@ -521,23 +518,15 @@ def test_client_disarm_fails_missing_lock(server, client):
 
 def test_client_disarm_fails_missing_session(server, client):
     """Should fail if a wrong access token is used."""
-    html = """[
-        {
-            "Poller": {"Poller": 1, "Panel": 1},
-            "CommandId": 5,
-            "Successful": False,
-        }
-    ]"""
     server.add(
         responses.POST,
         "https://example.com/api/panel/syncSendCommand",
-        body=html,
-        status=403,
+        status=401,
     )
     client._session_id = "test"
     client._lock.acquire()
 
-    with pytest.raises(HTTPError):
+    with pytest.raises(InvalidToken):
         client.disarm()
     assert len(server.calls) == 1
 
