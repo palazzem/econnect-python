@@ -197,6 +197,131 @@ def test_client_auth_with_domain(server):
     assert server.calls[0].request.params["domain"] == "domain"
 
 
+def test_client_poll(server, client):
+    """Should leverage long-polling endpoint to grab the status."""
+    html = """
+        {
+            "ConnectionStatus": false,
+            "CanElevate": false,
+            "LoggedIn": false,
+            "LoginInProgress": false,
+            "Areas": false,
+            "Events": false,
+            "Inputs": false,
+            "Outputs": false,
+            "Anomalies": false,
+            "ReadStringsInProgress": false,
+            "ReadStringPercentage": 0,
+            "Strings": 0,
+            "ManagedAccounts": false,
+            "Temperature": false,
+            "StatusAdv": false,
+            "Images": false,
+            "AdditionalInfoSupported": true,
+            "HasChanges": false
+        }
+    """
+    server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+    client._session_id = "test"
+
+    state = client.poll()
+    assert len(state.keys()) == 3
+    assert state["has_changes"] is False
+    assert state["inputs"] is False
+    assert state["areas"] is False
+
+
+def test_client_poll_with_changes(server, client):
+    """Should return a dict with updated states."""
+    html = """
+        {
+            "ConnectionStatus": false,
+            "CanElevate": false,
+            "LoggedIn": false,
+            "LoginInProgress": false,
+            "Areas": true,
+            "Events": false,
+            "Inputs": true,
+            "Outputs": false,
+            "Anomalies": false,
+            "ReadStringsInProgress": false,
+            "ReadStringPercentage": 0,
+            "Strings": 0,
+            "ManagedAccounts": false,
+            "Temperature": false,
+            "StatusAdv": false,
+            "Images": false,
+            "AdditionalInfoSupported": true,
+            "HasChanges": true
+        }
+    """
+    server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+    client._session_id = "test"
+
+    state = client.poll()
+    assert len(state.keys()) == 3
+    assert state["has_changes"] is True
+    assert state["inputs"] is True
+    assert state["areas"] is True
+
+
+def test_client_poll_with_updated_ids(server, client):
+    """Should use internal IDs to make the call."""
+    html = """
+        {
+            "ConnectionStatus": false,
+            "CanElevate": false,
+            "LoggedIn": false,
+            "LoginInProgress": false,
+            "Areas": true,
+            "Events": false,
+            "Inputs": true,
+            "Outputs": false,
+            "Anomalies": false,
+            "ReadStringsInProgress": false,
+            "ReadStringPercentage": 0,
+            "Strings": 0,
+            "ManagedAccounts": false,
+            "Temperature": false,
+            "StatusAdv": false,
+            "Images": false,
+            "AdditionalInfoSupported": true,
+            "HasChanges": true
+        }
+    """
+    server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+    client._session_id = "test"
+    client._latestEntryId = {
+        query.SECTORS: 42,
+        query.INPUTS: 4242,
+    }
+
+    client.poll()
+    assert len(server.calls) == 1
+    body = server.calls[0].request.body.split("&")
+    assert "sessionId=test" in body
+    assert "Areas=42" in body
+    assert "Inputs=4242" in body
+    assert "CanElevate=1" in body
+    assert "ConnectionStatus=1" in body
+
+
+def test_client_poll_unknown_error(server, client):
+    """Should raise an Exception for unknown status code."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/updates",
+        body="Server Error",
+        status=500,
+    )
+
+    client._session_id = "test"
+
+    with pytest.raises(HTTPError):
+        client.poll()
+    assert len(server.calls) == 1
+
+
 def test_client_lock(server, client, mocker):
     """Should acquire a lock if credentials are properly provided."""
     html = """[
@@ -759,6 +884,8 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
     assert sectors_disarmed == [
         {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
     ]
+    # Element 4 is filtered out but the query must store that value
+    assert client._latestEntryId[query.SECTORS] == 4
 
 
 def test_client_get_inputs(server, client, inputs_json, mocker):
@@ -783,6 +910,8 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
     assert inputs_wait == [
         {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
     ]
+    # Element 4 is filtered out but the query must store that value
+    assert client._latestEntryId[query.INPUTS] == 4
 
 
 def test_client_query_not_valid(client):
