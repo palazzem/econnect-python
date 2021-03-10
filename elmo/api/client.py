@@ -42,6 +42,12 @@ class ElmoClient(object):
         self._session_expire = 0
         self._lock = Lock()
         self._strings = None
+        # TODO: this item doesn't belong to the client. Split the stateful
+        # implementation from the client, so that it can stay stateless.
+        self._latestEntryId = {
+            q.SECTORS: 0,
+            q.INPUTS: 0,
+        }
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses
@@ -343,7 +349,13 @@ class ElmoClient(object):
         # Filter only entries that are used
         active = []
         not_active = []
-        for entry in response.json():
+        entries = response.json()
+
+        # The last entry ID is used in `self.poll()` long-polling API
+        self._latestEntryId[query] = entries[-1]["Id"]
+
+        # Massage data
+        for entry in entries:
             if entry["InUse"]:
                 item = {
                     "id": entry["Id"],

@@ -759,6 +759,8 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
     assert sectors_disarmed == [
         {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
     ]
+    # Element 4 is filtered out but the query must store that value
+    assert client._latestEntryId[query.SECTORS] == 4
 
 
 def test_client_get_inputs(server, client, inputs_json, mocker):
@@ -783,6 +785,8 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
     assert inputs_wait == [
         {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
     ]
+    # Element 4 is filtered out but the query must store that value
+    assert client._latestEntryId[query.INPUTS] == 4
 
 
 def test_client_query_not_valid(client):
