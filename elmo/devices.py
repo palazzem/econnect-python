@@ -54,7 +54,7 @@ class AlarmDevice:
         for more details.
         """
         # TODO: handle exceptions so that it logs expected errors; add tests for this
-        return self._connection.poll()
+        return self._connection.poll({x: y for x, y in self._lastIds.items()})
 
     def update(self):
         """Update the internal status of armed and disarmed sectors, or inputs

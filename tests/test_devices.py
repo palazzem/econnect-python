@@ -116,6 +116,7 @@ def test_device_authentication(device, mocker):
 def test_device_poll_updates_success(device, mocker):
     """Should call the client polling system."""
     mocker.patch.object(device._connection, "poll")
+    device._lastIds = {q.SECTORS: 42, q.INPUTS: 4242}
 
     # ElmoClient.poll() is already tested
     # Check only if they are called properly and if the method handles
@@ -123,6 +124,25 @@ def test_device_poll_updates_success(device, mocker):
     device.has_updates()
     assert device._connection.poll.call_count == 1
     assert {9: 42, 10: 4242} in device._connection.poll.call_args[0]
+
+
+def test_device_poll_updates_ids_immutable(device, mocker):
+    """Should pass a new dictionary to the underlying client, so it stays immutable."""
+
+    def bad_poll(ids):
+        ids[q.SECTORS] = 0
+        ids[q.INPUTS] = 0
+
+    device._lastIds = {q.SECTORS: 42, q.INPUTS: 4242}
+    mocker.patch.object(device._connection, "poll")
+    device._connection.poll.side_effect = bad_poll
+
+    # ElmoClient.poll() is already tested
+    # Check only if they are called properly and if the method handles
+    # properly exceptions
+    device.has_updates()
+    assert device._connection.poll.call_count == 1
+    assert {9: 42, 10: 4242} == device._lastIds
 
 
 def test_device_arm_success(device, mocker):
