@@ -13,8 +13,9 @@ def client():
 
 
 @pytest.fixture
-def device(client):
+def device(client, mocker):
     """Create an AlarmDevice with a mocked client."""
+    client._session = mocker.Mock()
     device = AlarmDevice(connection=client)
     yield device
 

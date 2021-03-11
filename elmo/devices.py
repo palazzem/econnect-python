@@ -3,15 +3,23 @@ from . import query as q
 
 
 class AlarmDevice:
-    """Describe.
+    """AlarmDevice class represents an e-connect alarm system. This method wraps around
+    a connector object (e.g. `ElmoClient`) so that the client can be stateless and just
+    return data, while this class persists the status of the alarm.
+
     Usage:
-        TBD
+        # Initialization
+        conn = ElmoClient()
+        device = AlarmDevice(conn)
+
+        # Connect automatically grab the latest status
+        device.connect("username", "password")
+        print(device.state)
     """
 
-    def __init__(self, connection=None):
+    def __init__(self, connection):
         # Configuration and internals
         self._connection = connection
-        self._strings = None
         self._lastIds = {
             q.SECTORS: 0,
             q.INPUTS: 0,
