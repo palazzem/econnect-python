@@ -281,6 +281,42 @@ def test_client_poll_with_changes(server, client):
     assert state["areas"] is True
 
 
+def test_client_poll_ignore_has_changes(server, client):
+    """Should ignore HasChanges value to prevent `event` updates."""
+    html = """
+        {
+            "ConnectionStatus": false,
+            "CanElevate": false,
+            "LoggedIn": false,
+            "LoginInProgress": false,
+            "Areas": false,
+            "Events": true,
+            "Inputs": false,
+            "Outputs": false,
+            "Anomalies": false,
+            "ReadStringsInProgress": false,
+            "ReadStringPercentage": 0,
+            "Strings": 0,
+            "ManagedAccounts": false,
+            "Temperature": false,
+            "StatusAdv": false,
+            "Images": false,
+            "AdditionalInfoSupported": true,
+            "HasChanges": true
+        }
+    """
+    server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+    client._session_id = "test"
+    ids = {
+        query.SECTORS: 42,
+        query.INPUTS: 4242,
+    }
+
+    state = client.poll(ids)
+    assert len(state.keys()) == 3
+    assert state["has_changes"] is False
+
+
 def test_client_poll_unknown_error(server, client):
     """Should raise an Exception for unknown status code."""
     server.add(

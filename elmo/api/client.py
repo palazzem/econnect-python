@@ -114,9 +114,11 @@ class ElmoClient(object):
         response = self._session.post(self._router.update, data=payload)
         response.raise_for_status()
 
+        # Don't use state["HasChanges"] because it takes into account also events
+        # that this client is ignoring. It forces the device to update too often.
         state = response.json()
         return {
-            "has_changes": state["HasChanges"],
+            "has_changes": state["Areas"] or state["Inputs"],
             "areas": state["Areas"],
             "inputs": state["Inputs"],
         }
