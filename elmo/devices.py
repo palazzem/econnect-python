@@ -1,4 +1,8 @@
-from .const import STATE_ALARM_UNKNOWN
+from .const import (
+    STATE_ALARM_UNKNOWN,
+    STATE_ALARM_ARMED_AWAY,
+    STATE_ALARM_DISARMED,
+)
 from . import query as q
 
 
@@ -33,10 +37,24 @@ class AlarmDevice:
         self.inputs_wait = []
 
     def connect(self, username, password):
-        pass
+        """Establish a connection with the E-connect backend, to retrieve an access
+        token. This method stores the `session_id` within the `ElmoClient` object
+        and is used automatically when other methods are called.
+
+        When a connection is successfully established, the device automatically
+        updates the status calling `self.update()`.
+        """
+        # TODO: handle exceptions so that it logs expected errors; add tests for this
+        self._connection.auth(username, password)
+        self.update()
 
     def has_updates(self):
-        pass
+        """Use the connection to detect a possible change. This is a blocking call
+        that must not be called in the main thread. Check `ElmoClient.poll()` method
+        for more details.
+        """
+        # TODO: handle exceptions so that it logs expected errors; add tests for this
+        return self._connection.poll()
 
     def update(self):
         """Update the internal status of armed and disarmed sectors, or inputs
@@ -52,6 +70,7 @@ class AlarmDevice:
             * inputs_alerted
             * inputs_wait
         """
+        # TODO: handle exceptions so that it logs expected errors; add tests for this
         # Retrieve sectors and inputs
         sectors_armed, sectors_disarmed, lastSector = self._connection.query(q.SECTORS)
         inputs_alerted, inputs_wait, lastInput = self._connection.query(q.INPUTS)
@@ -63,8 +82,20 @@ class AlarmDevice:
         self._lastIds[q.SECTORS] = lastSector
         self._lastIds[q.INPUTS] = lastInput
 
-    def arm(self, sectors=None):
-        pass
+        # Update the internal state machine
+        if len(self.sectors_armed) > 0:
+            self.state = STATE_ALARM_ARMED_AWAY
+        elif len(self.sectors_armed) == 0:
+            self.state = STATE_ALARM_DISARMED
 
-    def disarm(self, sectors=None):
-        pass
+    def arm(self, code, sectors=None):
+        # TODO: handle exceptions so that it logs expected errors; add tests for this
+        with self._connection.lock(code):
+            self._connection.arm(sectors=sectors)
+            self.state = STATE_ALARM_ARMED_AWAY
+
+    def disarm(self, code, sectors=None):
+        # TODO: handle exceptions so that it logs expected errors; add tests for this
+        with self._connection.lock(code):
+            self._connection.disarm(sectors=sectors)
+            self.state = STATE_ALARM_DISARMED
