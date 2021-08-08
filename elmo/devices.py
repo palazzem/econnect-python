@@ -31,10 +31,10 @@ class AlarmDevice:
 
         # Alarm state
         self.state = STATE_ALARM_UNKNOWN
-        self.sectors_armed = []
-        self.sectors_disarmed = []
-        self.inputs_alerted = []
-        self.inputs_wait = []
+        self.sectors_armed = {}
+        self.sectors_disarmed = {}
+        self.inputs_alerted = {}
+        self.inputs_wait = {}
 
     def connect(self, username, password):
         """Establish a connection with the E-connect backend, to retrieve an access
@@ -83,9 +83,9 @@ class AlarmDevice:
         self._lastIds[q.INPUTS] = lastInput
 
         # Update the internal state machine
-        if len(self.sectors_armed) > 0:
+        if self.sectors_armed:
             self.state = STATE_ALARM_ARMED_AWAY
-        elif len(self.sectors_armed) == 0:
+        else:
             self.state = STATE_ALARM_DISARMED
 
     def arm(self, code, sectors=None):

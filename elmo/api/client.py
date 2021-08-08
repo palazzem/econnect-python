@@ -381,8 +381,8 @@ class ElmoClient(object):
         descriptions = self._get_descriptions()
 
         # Filter only entries that are used
-        active = []
-        not_active = []
+        active = {}
+        not_active = {}
         entries = response.json()
 
         # The last entry ID is used in `self.poll()` long-polling API
@@ -399,8 +399,8 @@ class ElmoClient(object):
                 }
 
                 if entry[status]:
-                    active.append(item)
+                    active[entry["Index"]] = item
                 else:
-                    not_active.append(item)
+                    not_active[entry["Index"]] = item
 
         return active, not_active, lastId

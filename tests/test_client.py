@@ -891,13 +891,13 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
-    assert sectors_armed == [
-        {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
-        {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
-    ]
-    assert sectors_disarmed == [
-        {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
-    ]
+    assert sectors_armed == {
+        0: {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
+        1: {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
+    }
+    assert sectors_disarmed == {
+        2: {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
+    }
     # Element 4 is filtered out but the query must store that value
     assert lastId == 4
 
@@ -917,13 +917,13 @@ def test_client_get_inputs_status(server, client, inputs_json, mocker):
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
-    assert inputs_alerted == [
-        {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
-        {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},
-    ]
-    assert inputs_wait == [
-        {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
-    ]
+    assert inputs_alerted == {
+        0: {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
+        1: {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},
+    }
+    assert inputs_wait == {
+        2: {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
+    }
     # Element 4 is filtered out but the query must store that value
     assert lastId == 4
 

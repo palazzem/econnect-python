@@ -11,10 +11,10 @@ def test_device_constructor(client):
     assert device._connection == client
     assert device._lastIds == {q.SECTORS: 0, q.INPUTS: 0}
     assert device.state == "unknown"
-    assert device.sectors_armed == []
-    assert device.sectors_disarmed == []
-    assert device.inputs_alerted == []
-    assert device.inputs_wait == []
+    assert device.sectors_armed == {}
+    assert device.sectors_disarmed == {}
+    assert device.inputs_alerted == {}
+    assert device.inputs_wait == {}
 
 
 def test_device_update_success(device, mocker):
