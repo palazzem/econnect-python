@@ -4,34 +4,36 @@
 #
 #    pip-compile requirements-testing.in
 #
-appdirs==1.4.4
-    # via virtualenv
-attrs==20.3.0
+attrs==21.2.0
     # via pytest
-certifi==2020.12.5
+backports.entry-points-selectable==1.1.0
+    # via virtualenv
+certifi==2021.5.30
     # via requests
-chardet==4.0.0
+charset-normalizer==2.0.4
     # via requests
-codecov==2.1.11
+codecov==2.1.12
     # via -r requirements-testing.in
 coverage==5.5
     # via
     #   codecov
     #   pytest-cov
-distlib==0.3.1
+distlib==0.3.2
     # via virtualenv
 filelock==3.0.12
     # via
     #   tox
     #   virtualenv
-idna==2.10
+idna==3.2
     # via requests
 iniconfig==1.1.1
     # via pytest
-packaging==20.9
+packaging==21.0
     # via
     #   pytest
     #   tox
+platformdirs==2.2.0
+    # via virtualenv
 pluggy==0.13.1
     # via
     #   pytest
@@ -42,22 +44,22 @@ py==1.10.0
     #   tox
 pyparsing==2.4.7
     # via packaging
-pytest-cov==2.11.1
+pytest-cov==2.12.1
     # via -r requirements-testing.in
-pytest-mock==3.5.1
+pytest-mock==3.6.1
     # via -r requirements-testing.in
-pytest==6.2.2
+pytest==6.2.4
     # via
     #   -r requirements-testing.in
     #   pytest-cov
     #   pytest-mock
-requests==2.25.1
+requests==2.26.0
     # via
     #   codecov
     #   responses
-responses==0.12.1
+responses==0.13.4
     # via -r requirements-testing.in
-six==1.15.0
+six==1.16.0
     # via
     #   responses
     #   tox
@@ -65,12 +67,13 @@ six==1.15.0
 toml==0.10.2
     # via
     #   pytest
+    #   pytest-cov
     #   tox
-tox==3.23.0
+tox==3.24.1
     # via -r requirements-testing.in
-urllib3==1.26.3
+urllib3==1.26.6
     # via
     #   requests
     #   responses
-virtualenv==20.4.2
+virtualenv==20.7.2
     # via tox
