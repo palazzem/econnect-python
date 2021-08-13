@@ -12,6 +12,7 @@ from .exceptions import (
     CredentialError,
     CodeError,
     InvalidSector,
+    InvalidInput,
     LockError,
 )
 
@@ -362,9 +363,21 @@ class ElmoClient(object):
             )
 
         # Excluding multiple inputs requires multiple requests
+        errors = []
         for payload in payloads:
             response = self._session.post(self._router.send_command, data=payload)
             response.raise_for_status()
+
+            # A not existing input returns 200 with a fail state
+            body = response.json()
+            if not body[0]["Successful"]:
+                errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_inputs = ",".join(str(x) for x in errors)
+            raise InvalidInput("Selected inputs don't exist: {}".format(invalid_inputs))
+
         return True
 
     @require_session
@@ -405,9 +418,21 @@ class ElmoClient(object):
             )
 
         # Including multiple inputs requires multiple requests
+        errors = []
         for payload in payloads:
             response = self._session.post(self._router.send_command, data=payload)
             response.raise_for_status()
+
+            # A not existing input returns 200 with a fail state
+            body = response.json()
+            if not body[0]["Successful"]:
+                errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_inputs = ",".join(str(x) for x in errors)
+            raise InvalidInput("Selected inputs don't exist: {}".format(invalid_inputs))
+
         return True
 
     @lru_cache(maxsize=1)
