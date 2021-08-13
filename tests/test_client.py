@@ -12,6 +12,7 @@ from elmo.api.exceptions import (
     InvalidToken,
     CodeError,
     InvalidSector,
+    InvalidInput,
     LockError,
 )
 
@@ -759,6 +760,256 @@ def test_client_disarm_fails_unknown_error(server, client):
 
     with pytest.raises(HTTPError):
         client.disarm()
+    assert len(server.calls) == 1
+
+
+def test_client_include(server, client):
+    """Should call the API and include the given input."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 147,
+            "Successful": true,
+            "ErrorMessages": []
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    assert client.include([3]) is True
+    assert len(server.calls) == 1
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=1" in body
+    assert "ElementsClass=10" in body
+    assert "ElementsIndexes=3" in body
+    assert "sessionId=test" in body
+
+
+def test_client_include_multiple_inputs(server, client):
+    """Should call the API and include given inputs."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 147,
+            "Successful": true,
+            "ErrorMessages": []
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    assert client.include([3, 4]) is True
+    assert len(server.calls) == 2
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=1" in body
+    assert "ElementsClass=10" in body
+    assert "ElementsIndexes=3" in body
+    assert "sessionId=test" in body
+    body = server.calls[1].request.body.split("&")
+    assert "CommandType=1" in body
+    assert "ElementsClass=10" in body
+    assert "ElementsIndexes=4" in body
+    assert "sessionId=test" in body
+
+
+def test_client_include_fails_missing_lock(server, client):
+    """include() should fail without calling the endpoint if Lock() has not been acquired."""
+    client._session_id = "test"
+
+    with pytest.raises(LockNotAcquired):
+        client.include([1])
+    assert client._lock.acquire(False)
+    assert len(server.calls) == 0
+
+
+def test_client_include_fails_missing_session(server, client):
+    """Should fail if a wrong access token is used."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        status=401,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(InvalidToken):
+        client.include([1])
+    assert len(server.calls) == 1
+
+
+def test_client_include_fails_wrong_input(server, client):
+    """Should fail if a not existing input is used."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 147,
+            "Successful": false,
+            "ErrorMessages": ["Command failed."]
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(InvalidInput):
+        assert client.include([9000])
+
+
+def test_client_include_fails_unknown_error(server, client):
+    """Should fail if an unknown error happens."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body="Server Error",
+        status=500,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(HTTPError):
+        client.include([1])
+    assert len(server.calls) == 1
+
+
+def test_client_exclude(server, client):
+    """Should call the API and exclude only the given inputs."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 147,
+            "Successful": true,
+            "ErrorMessages": []
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    assert client.exclude([3]) is True
+    assert len(server.calls) == 1
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=2" in body
+    assert "ElementsClass=10" in body
+    assert "ElementsIndexes=3" in body
+    assert "sessionId=test" in body
+
+
+def est_client_exclude_multiple_inputs(server, client):
+    """Should call the API and exclude only the given inputs."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 147,
+            "Successful": true,
+            "ErrorMessages": []
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    assert client.exclude([3, 4]) is True
+    assert len(server.calls) == 2
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=2" in body
+    assert "ElementsClass=10" in body
+    assert "ElementsIndexes=3" in body
+    assert "sessionId=test" in body
+    body = server.calls[1].request.body.split("&")
+    assert "CommandType=2" in body
+    assert "ElementsClass=10" in body
+    assert "ElementsIndexes=4" in body
+    assert "sessionId=test" in body
+
+
+def test_client_exclude_fails_missing_lock(server, client):
+    """exclude() should fail without calling the endpoint if Lock() has not been acquired."""
+    client._session_id = "test"
+
+    with pytest.raises(LockNotAcquired):
+        client.exclude([1])
+    assert client._lock.acquire(False)
+    assert len(server.calls) == 0
+
+
+def test_client_exclude_fails_missing_session(server, client):
+    """Should fail if a wrong access token is used."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        status=401,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(InvalidToken):
+        client.exclude([1])
+    assert len(server.calls) == 1
+
+
+def test_client_exclude_fails_wrong_input(server, client):
+    """Should fail if a not existing input is used."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 147,
+            "Successful": false,
+            "ErrorMessages": ["Command failed."]
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client._session_id = "test"
+    client._lock.acquire()
+
+    with pytest.raises(InvalidInput):
+        assert client.exclude([9000])
+
+
+def test_client_exclude_fails_unknown_error(server, client):
+    """Should fail if an unknown error happens."""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body="Server Error",
+        status=500,
+    )
+    client._session_id = "unknown"
+    client._lock.acquire()
+
+    with pytest.raises(HTTPError):
+        client.exclude([1])
     assert len(server.calls) == 1
 
 
