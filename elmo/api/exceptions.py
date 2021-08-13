@@ -68,3 +68,9 @@ class InvalidSector(APIException):
     """Exception raised when armed/disarmed sector doesn't exist."""
 
     default_message = "Selected sector doesn't exist."
+
+
+class InvalidInput(APIException):
+    """Exception raised when included/excluded input doesn't exist."""
+
+    default_message = "Selected input doesn't exist."
