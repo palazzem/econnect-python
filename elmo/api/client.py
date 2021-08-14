@@ -488,8 +488,10 @@ class ElmoClient(object):
         # Query detection
         if query == q.SECTORS:
             endpoint = self._router.sectors
+            key_group = "sectors"
         elif query == q.INPUTS:
             endpoint = self._router.inputs
+            key_group = "inputs"
         else:
             # Bail-out if the query is not recognized
             raise QueryNotValid()
@@ -506,6 +508,10 @@ class ElmoClient(object):
         # are never excluded.
         entries = response.json()
         items = {}
+        result = {
+            "last_id": entries[-1]["Id"],
+            key_group: items,
+        }
         for entry in entries:
             if entry["InUse"]:
                 item = {
@@ -518,4 +524,4 @@ class ElmoClient(object):
 
                 items[entry.get("Index")] = item
 
-        return items
+        return result
