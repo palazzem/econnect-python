@@ -1129,15 +1129,30 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
     assert sectors == {
-        0: {
-            "element": 1,
-            "id": 1,
-            "index": 0,
-            "excluded": False,
-            "name": "Living Room",
+        "last_id": 4,
+        "sectors": {
+            0: {
+                "element": 1,
+                "id": 1,
+                "index": 0,
+                "excluded": False,
+                "name": "Living Room",
+            },
+            1: {
+                "element": 2,
+                "id": 2,
+                "index": 1,
+                "excluded": False,
+                "name": "Bedroom",
+            },
+            2: {
+                "element": 3,
+                "id": 3,
+                "index": 2,
+                "excluded": False,
+                "name": "Kitchen",
+            },
         },
-        1: {"element": 2, "id": 2, "index": 1, "excluded": False, "name": "Bedroom"},
-        2: {"element": 3, "id": 3, "index": 2, "excluded": False, "name": "Kitchen"},
     }
 
 
@@ -1157,20 +1172,23 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
     assert inputs == {
-        0: {"element": 1, "id": 1, "index": 0, "excluded": False, "name": "Alarm"},
-        1: {
-            "element": 2,
-            "id": 2,
-            "index": 1,
-            "excluded": False,
-            "name": "Window kitchen",
-        },
-        2: {
-            "element": 3,
-            "id": 3,
-            "index": 2,
-            "excluded": True,
-            "name": "Door entryway",
+        "last_id": 4,
+        "inputs": {
+            0: {"element": 1, "id": 1, "index": 0, "excluded": False, "name": "Alarm"},
+            1: {
+                "element": 2,
+                "id": 2,
+                "index": 1,
+                "excluded": False,
+                "name": "Window kitchen",
+            },
+            2: {
+                "element": 3,
+                "id": 3,
+                "index": 2,
+                "excluded": True,
+                "name": "Door entryway",
+            },
         },
     }
 
