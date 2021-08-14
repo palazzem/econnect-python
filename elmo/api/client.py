@@ -487,11 +487,13 @@ class ElmoClient(object):
         """
         # Query detection
         if query == q.SECTORS:
-            endpoint = self._router.sectors
+            status = "Active"
             key_group = "sectors"
+            endpoint = self._router.sectors
         elif query == q.INPUTS:
-            endpoint = self._router.inputs
+            status = "Alarm"
             key_group = "inputs"
+            endpoint = self._router.inputs
         else:
             # Bail-out if the query is not recognized
             raise QueryNotValid()
@@ -519,6 +521,7 @@ class ElmoClient(object):
                     "index": entry.get("Index"),
                     "element": entry.get("Element"),
                     "excluded": entry.get("Excluded", False),
+                    "status": entry.get(status, False),
                     "name": descriptions[query][entry.get("Index")],
                 }
 
