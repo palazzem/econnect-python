@@ -521,37 +521,3 @@ class ElmoClient(object):
                     not_active.append(item)
 
         return active, not_active
-
-    @require_session
-    def check(self):
-        """Check the Elmo System to get the status of armed or disarmed sectors or inputs
-        that are in alerted state or that are waiting. This method checks:
-            * If any sector is in alerted state
-            * If the alarm for each sector is armed or disarmed
-            * If the alarm for each input is in alerted state or not
-
-        This method is considered a shortcut that calls `client.query()` with `SECTORS`
-        and `INPUTS` queries.
-
-        Raises:
-            HTTPError: if there is an error raised by the API (not 2xx response).
-        Returns:
-            A `dict` object that includes all the above information. The `dict` is in
-            the following format:
-            {
-              "sectors_armed": [{"id": 0, "name": "Entryway", "element": 1, "index": 0}, ...],
-              "sectors_disarmed": [{"id": 1, "name": "Kitchen", "element": 2, "index": 1}, ...],
-              "inputs_alerted": [{"id": 0, "name": "Door", "element": 3, "index": 0}, ...],
-              "inputs_wait": [{"id": 1, "name": "Window", "element": 4, "index": 1}, ...],
-            }
-        """
-        # Retrieve sectors and inputs
-        sectors_armed, sectors_disarmed = self.query(q.SECTORS)
-        inputs_alerted, inputs_wait = self.query(q.INPUTS)
-
-        return {
-            "sectors_armed": sectors_armed,
-            "sectors_disarmed": sectors_disarmed,
-            "inputs_alerted": inputs_alerted,
-            "inputs_wait": inputs_wait,
-        }
