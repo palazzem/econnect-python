@@ -463,29 +463,32 @@ class ElmoClient(object):
 
     @require_session
     def query(self, query):
-        """Query an Elmo System to retrieve registered entries. Items are grouped
-        by "Active" status. It's possible to query different part of the system
-        using the `elmo.query` module:
+        """Query an Elmo System to retrieve registered entries. It's possible to query
+        different part of the system using the `elmo.query` module:
 
             from elmo import query
 
-            sectors_armed, sectors_disarmed = client.query(query.SECTORS)
-            inputs_alerted, inputs_wait = client.query(query.INPUTS)
+            sectors = client.query(query.SECTORS)
+            inputs = client.query(query.INPUTS)
 
         Raises:
             QueryNotValid: if the query is not recognized.
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A tuple containing two list `(active, not_active)`. Every item is an entry
-            (sector or input) represented by a `dict` with the following fields: `id`,
-            `index`, `element`, `name`.
+            A list of items containing the raw query. Every item is an entry
+            (sector or input) represented by a `dict` with the following structure:
+                {
+                    "id": 1,
+                    "index": 0,
+                    "element": 3,
+                    "excluded": False,
+                    "name": "Kitchen",
+                }
         """
         # Query detection
         if query == q.SECTORS:
             endpoint = self._router.sectors
-            status = "Active"
         elif query == q.INPUTS:
-            status = "Alarm"
             endpoint = self._router.inputs
         else:
             # Bail-out if the query is not recognized
@@ -494,30 +497,25 @@ class ElmoClient(object):
         response = self._session.post(endpoint, data={"sessionId": self._session_id})
         response.raise_for_status()
 
-        # Retrieve cached descriptions
+        # Retrieve description or use the cache
         descriptions = self._get_descriptions()
 
         # Filter only entries that are used
-        active = []
-        not_active = []
+        # `excluded` field is available only on inputs, but to return the same `dict`
+        # structure, we default "excluded" as False for sectors. In fact, sectors
+        # are never excluded.
         entries = response.json()
-
-        # The last entry ID is used in `self.poll()` long-polling API
-        self._latestEntryId[query] = entries[-1]["Id"]
-
-        # Massage data
+        items = {}
         for entry in entries:
             if entry["InUse"]:
                 item = {
-                    "id": entry["Id"],
-                    "index": entry["Index"],
-                    "element": entry["Element"],
-                    "name": descriptions[query][entry["Index"]],
+                    "id": entry.get("Id"),
+                    "index": entry.get("Index"),
+                    "element": entry.get("Element"),
+                    "excluded": entry.get("Excluded", False),
+                    "name": descriptions[query][entry.get("Index")],
                 }
 
-                if entry[status]:
-                    active.append(item)
-                else:
-                    not_active.append(item)
+                items[entry.get("Index")] = item
 
-        return active, not_active
+        return items

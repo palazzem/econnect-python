@@ -109,7 +109,7 @@ def inputs_json():
       {
         "Alarm": false,
         "MemoryAlarm": false,
-        "Excluded": false,
+        "Excluded": true,
         "InUse": true,
         "IsVideo": false,
         "Id": 3,

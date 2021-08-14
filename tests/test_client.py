@@ -1124,19 +1124,21 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
         9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
     }
     client._session_id = "test"
-    sectors_armed, sectors_disarmed = client.query(query.SECTORS)
+    sectors = client.query(query.SECTORS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
-    assert sectors_armed == [
-        {"element": 1, "id": 1, "index": 0, "name": "Living Room"},
-        {"element": 2, "id": 2, "index": 1, "name": "Bedroom"},
-    ]
-    assert sectors_disarmed == [
-        {"element": 3, "id": 3, "index": 2, "name": "Kitchen"},
-    ]
-    # Element 4 is filtered out but the query must store that value
-    assert client._latestEntryId[query.SECTORS] == 4
+    assert sectors == {
+        0: {
+            "element": 1,
+            "id": 1,
+            "index": 0,
+            "excluded": False,
+            "name": "Living Room",
+        },
+        1: {"element": 2, "id": 2, "index": 1, "excluded": False, "name": "Bedroom"},
+        2: {"element": 3, "id": 3, "index": 2, "excluded": False, "name": "Kitchen"},
+    }
 
 
 def test_client_get_inputs(server, client, inputs_json, mocker):
@@ -1150,19 +1152,27 @@ def test_client_get_inputs(server, client, inputs_json, mocker):
         10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
     }
     client._session_id = "test"
-    inputs_alerted, inputs_wait = client.query(query.INPUTS)
+    inputs = client.query(query.INPUTS)
     # Expected output
     assert client._get_descriptions.called is True
     assert len(server.calls) == 1
-    assert inputs_alerted == [
-        {"element": 1, "id": 1, "index": 0, "name": "Alarm"},
-        {"element": 2, "id": 2, "index": 1, "name": "Window kitchen"},
-    ]
-    assert inputs_wait == [
-        {"element": 3, "id": 3, "index": 2, "name": "Door entryway"},
-    ]
-    # Element 4 is filtered out but the query must store that value
-    assert client._latestEntryId[query.INPUTS] == 4
+    assert inputs == {
+        0: {"element": 1, "id": 1, "index": 0, "excluded": False, "name": "Alarm"},
+        1: {
+            "element": 2,
+            "id": 2,
+            "index": 1,
+            "excluded": False,
+            "name": "Window kitchen",
+        },
+        2: {
+            "element": 3,
+            "id": 3,
+            "index": 2,
+            "excluded": True,
+            "name": "Door entryway",
+        },
+    }
 
 
 def test_client_query_not_valid(client):
