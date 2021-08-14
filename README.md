@@ -46,17 +46,6 @@ with client.lock("secret-code") as c:
 # Query the system
 sectors_armed, sectors_disarmed = client.query(query.SECTORS)
 inputs_alerted, inputs_wait = client.query(query.INPUTS)
-
-# Or use the shortcut
-status = client.check()
-
-# Returns:
-# {
-#   "sectors_armed": [{"id": 0, "name": "Entryway", "element": 1, "index": 0}, ...],
-#   "sectors_disarmed": [{"id": 1, "name": "Kitchen", "element": 2, "index": 1}, ...],
-#   "inputs_alerted": [{"id": 0, "name": "Door", "element": 3, "index": 0}, ...],
-#   "inputs_wait": [{"id": 1, "name": "Window", "element": 4, "index": 1}, ...],
-# }
 ```
 
 The access token is valid for 10 minutes, after which, you need to authenticate again to
