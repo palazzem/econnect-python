@@ -6,9 +6,9 @@
 #
 attrs==21.2.0
     # via pytest
-backports.entry-points-selectable==1.1.0
+backports-entry-points-selectable==1.1.0
     # via virtualenv
-certifi==2021.5.30
+certifi==2022.12.7
     # via requests
 charset-normalizer==2.0.4
     # via requests
@@ -44,15 +44,15 @@ py==1.10.0
     #   tox
 pyparsing==2.4.7
     # via packaging
-pytest-cov==2.12.1
-    # via -r requirements-testing.in
-pytest-mock==3.6.1
-    # via -r requirements-testing.in
 pytest==6.2.4
     # via
     #   -r requirements-testing.in
     #   pytest-cov
     #   pytest-mock
+pytest-cov==2.12.1
+    # via -r requirements-testing.in
+pytest-mock==3.6.1
+    # via -r requirements-testing.in
 requests==2.26.0
     # via
     #   codecov
