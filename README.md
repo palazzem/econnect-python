@@ -2,7 +2,6 @@
 
 [![PyPI version](https://badge.fury.io/py/econnect-python.svg)](https://badge.fury.io/py/econnect-python)
 [![CircleCI](https://circleci.com/gh/palazzem/econnect-python/tree/master.svg?style=svg)](https://circleci.com/gh/palazzem/econnect-python/tree/master)
-[![codecov](https://codecov.io/gh/palazzem/econnect-python/branch/master/graph/badge.svg)](https://codecov.io/gh/palazzem/econnect-python)
 
 `econnect-python` is an API adapter used to control programmatically an Elmo alarm system.
 Through a generic configuration, the client allows:
