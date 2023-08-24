@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   econnect:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       TOX_SKIP_ENV: lint
 
