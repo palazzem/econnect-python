@@ -40,15 +40,7 @@ class ElmoClient(object):
         self._domain = domain
         self._session = Session()
         self._session_id = session_id
-        self._session_expire = 0
         self._lock = Lock()
-        self._strings = None
-        # TODO: this item doesn't belong to the client. Split the stateful
-        # implementation from the client, so that it can stay stateless.
-        self._latestEntryId = {
-            q.SECTORS: 0,
-            q.INPUTS: 0,
-        }
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses
@@ -91,7 +83,7 @@ class ElmoClient(object):
         return self._session_id
 
     @require_session
-    def poll(self):
+    def poll(self, ids):
         """Use a long-polling API to identify when something changes in the
         system. Calling this method blocks the thread for 15 seconds, waiting
         for a backend response that happens only when the alarm system status
@@ -115,17 +107,19 @@ class ElmoClient(object):
         """
         payload = {
             "sessionId": self._session_id,
-            "Areas": self._latestEntryId[q.SECTORS],
-            "Inputs": self._latestEntryId[q.INPUTS],
+            "Areas": ids[q.SECTORS],
+            "Inputs": ids[q.INPUTS],
             "CanElevate": "1",
             "ConnectionStatus": "1",
         }
         response = self._session.post(self._router.update, data=payload)
         response.raise_for_status()
 
+        # Don't use state["HasChanges"] because it takes into account also events
+        # that this client is ignoring. It forces the device to update too often.
         state = response.json()
         return {
-            "has_changes": state["HasChanges"],
+            "has_changes": state["Areas"] or state["Inputs"],
             "areas": state["Areas"],
             "inputs": state["Inputs"],
         }
