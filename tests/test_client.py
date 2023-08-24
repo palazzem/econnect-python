@@ -224,12 +224,24 @@ def test_client_poll(server, client):
     """
     server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
     client._session_id = "test"
+    ids = {
+        query.SECTORS: 42,
+        query.INPUTS: 4242,
+    }
 
-    state = client.poll()
+    state = client.poll(ids)
     assert len(state.keys()) == 3
+    # Check response
     assert state["has_changes"] is False
     assert state["inputs"] is False
     assert state["areas"] is False
+    # Check request
+    body = server.calls[0].request.body.split("&")
+    assert "sessionId=test" in body
+    assert "Areas=42" in body
+    assert "Inputs=4242" in body
+    assert "CanElevate=1" in body
+    assert "ConnectionStatus=1" in body
 
 
 def test_client_poll_with_changes(server, client):
@@ -258,25 +270,29 @@ def test_client_poll_with_changes(server, client):
     """
     server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
     client._session_id = "test"
+    ids = {
+        query.SECTORS: 42,
+        query.INPUTS: 4242,
+    }
 
-    state = client.poll()
+    state = client.poll(ids)
     assert len(state.keys()) == 3
     assert state["has_changes"] is True
     assert state["inputs"] is True
     assert state["areas"] is True
 
 
-def test_client_poll_with_updated_ids(server, client):
-    """Should use internal IDs to make the call."""
+def test_client_poll_ignore_has_changes(server, client):
+    """Should ignore HasChanges value to prevent `event` updates."""
     html = """
         {
             "ConnectionStatus": false,
             "CanElevate": false,
             "LoggedIn": false,
             "LoginInProgress": false,
-            "Areas": true,
-            "Events": false,
-            "Inputs": true,
+            "Areas": false,
+            "Events": true,
+            "Inputs": false,
             "Outputs": false,
             "Anomalies": false,
             "ReadStringsInProgress": false,
@@ -292,19 +308,14 @@ def test_client_poll_with_updated_ids(server, client):
     """
     server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
     client._session_id = "test"
-    client._latestEntryId = {
+    ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
     }
 
-    client.poll()
-    assert len(server.calls) == 1
-    body = server.calls[0].request.body.split("&")
-    assert "sessionId=test" in body
-    assert "Areas=42" in body
-    assert "Inputs=4242" in body
-    assert "CanElevate=1" in body
-    assert "ConnectionStatus=1" in body
+    state = client.poll(ids)
+    assert len(state.keys()) == 3
+    assert state["has_changes"] is False
 
 
 def test_client_poll_unknown_error(server, client):
@@ -315,11 +326,14 @@ def test_client_poll_unknown_error(server, client):
         body="Server Error",
         status=500,
     )
-
     client._session_id = "test"
+    ids = {
+        query.SECTORS: 42,
+        query.INPUTS: 4242,
+    }
 
     with pytest.raises(HTTPError):
-        client.poll()
+        client.poll(ids)
     assert len(server.calls) == 1
 
 
@@ -1159,7 +1173,7 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
     }
 
 
-def test_client_get_inputs(server, client, inputs_json, mocker):
+def test_client_get_inputs_status(server, client, inputs_json, mocker):
     """Should query a Elmo system to retrieve inputs status."""
     # query() depends on _get_descriptions()
     server.add(

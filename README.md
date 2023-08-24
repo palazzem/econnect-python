@@ -1,8 +1,6 @@
 # E-connect Python API
 
 [![PyPI version](https://badge.fury.io/py/econnect-python.svg)](https://badge.fury.io/py/econnect-python)
-[![CircleCI](https://circleci.com/gh/palazzem/econnect-python/tree/master.svg?style=svg)](https://circleci.com/gh/palazzem/econnect-python/tree/master)
-[![codecov](https://codecov.io/gh/palazzem/econnect-python/branch/master/graph/badge.svg)](https://codecov.io/gh/palazzem/econnect-python)
 
 `econnect-python` is an API adapter used to control programmatically an Elmo alarm system.
 Through a generic configuration, the client allows:
@@ -73,6 +71,13 @@ client.auth("username", "password")
 
 If your `base_url` or `domain` are not properly set, your credentials will not work
 and you will get a `403 Client Error` as your username and password are wrong.
+
+## Contributing
+
+We are very open to the community's contributions - be it a quick fix of a typo, or a completely new feature!
+You don't need to be a Python expert to provide meaningful improvements. To learn how to get started, check
+out our [Contributor Guidelines](https://github.com/palazzem/econnect-python/blob/main/CONTRIBUTING.md) first,
+and ask for help in our [Discord channel](https://discord.gg/NSmAPWw8tE) if you have questions.
 
 ## Development
 

@@ -12,11 +12,8 @@ certifi==2021.5.30
     # via requests
 charset-normalizer==2.0.4
     # via requests
-codecov==2.1.12
-    # via -r requirements-testing.in
 coverage==5.5
     # via
-    #   codecov
     #   pytest-cov
 distlib==0.3.2
     # via virtualenv
@@ -55,7 +52,6 @@ pytest==6.2.4
     #   pytest-mock
 requests==2.26.0
     # via
-    #   codecov
     #   responses
 responses==0.13.4
     # via -r requirements-testing.in
