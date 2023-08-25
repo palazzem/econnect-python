@@ -2,7 +2,7 @@ import pytest
 from requests.exceptions import HTTPError
 
 from elmo import query as q
-from elmo.api.exceptions import CredentialError
+from elmo.api.exceptions import CredentialError, ParseError
 from elmo.devices import AlarmDevice
 
 
@@ -53,6 +53,54 @@ def test_device_connect_credential_error(device, mocker):
         device.connect("username", "password")
     assert device._connection.auth.call_count == 1
     assert device.update.call_count == 0
+
+
+def test_device_has_updates(device, mocker):
+    """Should call the client polling system passing the internal state."""
+    mocker.patch.object(device._connection, "poll")
+    device._lastIds = {q.SECTORS: 42, q.INPUTS: 4242}
+    # Test
+    device.has_updates()
+    assert device._connection.poll.call_count == 1
+    assert {9: 42, 10: 4242} in device._connection.poll.call_args[0]
+
+
+def test_device_has_updates_ids_immutable(device, mocker):
+    """Device internal ids must be immutable."""
+
+    def bad_poll(ids):
+        ids[q.SECTORS] = 0
+        ids[q.INPUTS] = 0
+
+    device._lastIds = {q.SECTORS: 42, q.INPUTS: 4242}
+    mocker.patch.object(device._connection, "poll")
+    device._connection.poll.side_effect = bad_poll
+    # Test
+    device.has_updates()
+    assert device._connection.poll.call_count == 1
+    assert {9: 42, 10: 4242} == device._lastIds
+
+
+def test_device_has_updates_errors(device, mocker):
+    """Should handle (log) polling errors."""
+    mocker.patch.object(device._connection, "poll")
+    device._connection.poll.side_effect = HTTPError("Unable to communicate with e-Connect")
+    # Test
+    with pytest.raises(HTTPError):
+        device.has_updates()
+    assert device._connection.poll.call_count == 1
+    assert {9: 0, 10: 0} == device._lastIds
+
+
+def test_device_has_updates_parse_errors(device, mocker):
+    """Should handle (log) polling errors."""
+    mocker.patch.object(device._connection, "poll")
+    device._connection.poll.side_effect = ParseError("Error parsing the poll response")
+    # Test
+    with pytest.raises(ParseError):
+        device.has_updates()
+    assert device._connection.poll.call_count == 1
+    assert {9: 0, 10: 0} == device._lastIds
 
 
 def test_device_update_success(device, mocker):
@@ -134,38 +182,6 @@ def test_device_update_query_not_valid(device, mocker):
     device._connection.query.side_effect = Exception("Unexpected")
 
     device.update()
-
-
-def test_device_poll_updates_success(device, mocker):
-    """Should call the client polling system."""
-    mocker.patch.object(device._connection, "poll")
-    device._lastIds = {q.SECTORS: 42, q.INPUTS: 4242}
-
-    # ElmoClient.poll() is already tested
-    # Check only if they are called properly and if the method handles
-    # properly exceptions
-    device.has_updates()
-    assert device._connection.poll.call_count == 1
-    assert {9: 42, 10: 4242} in device._connection.poll.call_args[0]
-
-
-def test_device_poll_updates_ids_immutable(device, mocker):
-    """Should pass a new dictionary to the underlying client, so it stays immutable."""
-
-    def bad_poll(ids):
-        ids[q.SECTORS] = 0
-        ids[q.INPUTS] = 0
-
-    device._lastIds = {q.SECTORS: 42, q.INPUTS: 4242}
-    mocker.patch.object(device._connection, "poll")
-    device._connection.poll.side_effect = bad_poll
-
-    # ElmoClient.poll() is already tested
-    # Check only if they are called properly and if the method handles
-    # properly exceptions
-    device.has_updates()
-    assert device._connection.poll.call_count == 1
-    assert {9: 42, 10: 4242} == device._lastIds
 
 
 def test_device_arm_success(device, mocker):

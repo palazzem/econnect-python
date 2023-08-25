@@ -3,7 +3,7 @@ import logging
 from requests.exceptions import HTTPError
 
 from . import query as q
-from .api.exceptions import CredentialError
+from .api.exceptions import CredentialError, ParseError
 from .const import STATE_ALARM_ARMED_AWAY, STATE_ALARM_DISARMED, STATE_ALARM_UNKNOWN
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,9 +61,19 @@ class AlarmDevice:
         """Use the connection to detect a possible change. This is a blocking call
         that must not be called in the main thread. Check `ElmoClient.poll()` method
         for more details.
+
+        Values passed to `ElmoClient.poll()` are the last known IDs for sectors and
+        inputs. A new dictionary is sent to avoid the underlying client to mutate
+        the device internal state.
         """
-        # TODO: handle exceptions so that it logs expected errors; add tests for this
-        return self._connection.poll({x: y for x, y in self._lastIds.items()})
+        try:
+            return self._connection.poll({x: y for x, y in self._lastIds.items()})
+        except HTTPError as err:
+            _LOGGER.error(f"Device | Error while checking if there are updates: {err}")
+            raise err
+        except ParseError as err:
+            _LOGGER.error(f"Device | Error parsing the poll response: {err}")
+            raise err
 
     def update(self):
         """Update the internal status of armed and disarmed sectors, or inputs
