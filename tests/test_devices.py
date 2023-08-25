@@ -1,6 +1,8 @@
 import pytest
+from requests.exceptions import HTTPError
 
 from elmo import query as q
+from elmo.api.exceptions import CredentialError
 from elmo.devices import AlarmDevice
 
 
@@ -15,6 +17,42 @@ def test_device_constructor(client):
     assert device.sectors_disarmed == {}
     assert device.inputs_alerted == {}
     assert device.inputs_wait == {}
+
+
+def test_device_connect(device, mocker):
+    """Should call authentication endpoints."""
+    mocker.patch.object(device._connection, "auth")
+    mocker.patch.object(device, "update")
+    # Test
+    device.connect("username", "password")
+    assert device._connection.auth.call_count == 1
+    assert "username" == device._connection.auth.call_args[0][0]
+    assert "password" == device._connection.auth.call_args[0][1]
+    assert device.update.call_count == 1
+
+
+def test_device_connect_error(device, mocker):
+    """Should handle (log) authentication errors (not 2xx)."""
+    mocker.patch.object(device._connection, "auth")
+    mocker.patch.object(device, "update")
+    device._connection.auth.side_effect = HTTPError("Unable to communicate with e-Connect")
+    # Test
+    with pytest.raises(HTTPError):
+        device.connect("username", "password")
+    assert device._connection.auth.call_count == 1
+    assert device.update.call_count == 0
+
+
+def test_device_connect_credential_error(device, mocker):
+    """Should handle (log) credential errors (401/403)."""
+    mocker.patch.object(device._connection, "auth")
+    mocker.patch.object(device, "update")
+    device._connection.auth.side_effect = CredentialError("Incorrect username and/or password")
+    # Test
+    with pytest.raises(CredentialError):
+        device.connect("username", "password")
+    assert device._connection.auth.call_count == 1
+    assert device.update.call_count == 0
 
 
 def test_device_update_success(device, mocker):
@@ -96,21 +134,6 @@ def test_device_update_query_not_valid(device, mocker):
     device._connection.query.side_effect = Exception("Unexpected")
 
     device.update()
-
-
-def test_device_authentication(device, mocker):
-    """Should authenticate and update the internal status when using `connect()`."""
-    mocker.patch.object(device._connection, "auth")
-    mocker.patch.object(device, "update")
-
-    # ElmoClient.auth() and AlarmDevice.update() are already tested
-    # Check only if they are called properly and if the method handles
-    # properly exceptions
-    device.connect("username", "password")
-    assert device._connection.auth.call_count == 1
-    assert "username" == device._connection.auth.call_args[0][0]
-    assert "password" == device._connection.auth.call_args[0][1]
-    assert device.update.call_count == 1
 
 
 def test_device_poll_updates_success(device, mocker):

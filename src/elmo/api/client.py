@@ -50,6 +50,7 @@ class ElmoClient:
             password: the Password used for the authentication.
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
+            CredentialError: if credentials are not correct
         Returns:
             The access token retrieved from the API. The token is also cached in
             the `ElmoClient` instance.

@@ -1,5 +1,12 @@
+import logging
+
+from requests.exceptions import HTTPError
+
 from . import query as q
+from .api.exceptions import CredentialError
 from .const import STATE_ALARM_ARMED_AWAY, STATE_ALARM_DISARMED, STATE_ALARM_UNKNOWN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class AlarmDevice:
@@ -40,9 +47,15 @@ class AlarmDevice:
         When a connection is successfully established, the device automatically
         updates the status calling `self.update()`.
         """
-        # TODO: handle exceptions so that it logs expected errors; add tests for this
-        self._connection.auth(username, password)
-        self.update()
+        try:
+            self._connection.auth(username, password)
+            self.update()
+        except HTTPError as err:
+            _LOGGER.error(f"Error while authenticating with e-Connect: {err}")
+            raise err
+        except CredentialError as err:
+            _LOGGER.error(f"Username or password are not correct: {err}")
+            raise err
 
     def has_updates(self):
         """Use the connection to detect a possible change. This is a blocking call
