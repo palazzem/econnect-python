@@ -98,29 +98,43 @@ source venv/bin/activate
 # Upgrade pip and install all projects and their dependencies
 pip install --upgrade pip
 pip install -e '.[all]'
+
+# Install pre-commit hooks
+pre-commit install
 ```
 
 ### Coding Guidelines
 
-We use [flake8][1] as a style guide enforcement. That said, we also use [black][2] to
-reformat our code, keeping a well defined style even for quotes, multi-lines blocks and
-other.
+To maintain a consistent codebase, we utilize [flake8][1] and [black][2]. Consistency is crucial as it
+helps readability, reduces errors, and facilitates collaboration among developers.
 
-Before submitting your code, be sure to launch `black` to reformat your PR.
+To ensure that every commit adheres to our coding standards, we've integrated [pre-commit hooks][3].
+These hooks automatically run `flake8` and `black` before each commit, ensuring that all code changes
+are automatically checked and formatted.
+
+For details on how to set up your development environment to make use of these hooks, please refer to the
+[Development][4] section of our documentation.
 
 [1]: https://pypi.org/project/flake8/
 [2]: https://github.com/ambv/black
+[3]: https://pre-commit.com/
+[4]: https://github.com/palazzem/econnect-python#development
 
 ### Testing
 
-`tox` is used to execute the following test matrix:
-* `lint`: launches `flake8` and `black --check` to be sure the code honors our style
-  guideline
-* `py{35,36,37,38}`: launches `py.test` to execute all tests under Python 3.5, 3.6, 3.7
-  and 3.8.
+Ensuring the robustness and reliability of our code is paramount. Therefore, all contributions must include
+at least one test to verify the intended behavior.
 
-To launch the full test matrix, just:
-
+To run tests locally, execute the test suite using `pytest` with the following command:
 ```bash
-$ tox
+pytest tests/ --cov elmo -s -v
 ```
+
+For a comprehensive test that mirrors the Continuous Integration (CI) environment across all supported Python
+versions, use `tox`:
+```bash
+tox
+```
+
+**Note**: To use `tox` effectively, ensure you have all the necessary Python versions installed. If any
+versions are missing, `tox` will provide relevant warnings.
