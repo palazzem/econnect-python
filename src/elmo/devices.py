@@ -51,10 +51,10 @@ class AlarmDevice:
             self._connection.auth(username, password)
             self.update()
         except HTTPError as err:
-            _LOGGER.error(f"Error while authenticating with e-Connect: {err}")
+            _LOGGER.error(f"Device | Error while authenticating with e-Connect: {err}")
             raise err
         except CredentialError as err:
-            _LOGGER.error(f"Username or password are not correct: {err}")
+            _LOGGER.error(f"Device | Username or password are not correct: {err}")
             raise err
 
     def has_updates(self):

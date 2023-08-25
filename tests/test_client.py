@@ -12,6 +12,7 @@ from elmo.api.exceptions import (
     InvalidToken,
     LockError,
     LockNotAcquired,
+    ParseError,
     QueryNotValid,
 )
 

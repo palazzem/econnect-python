@@ -13,6 +13,7 @@ from .exceptions import (
     InvalidInput,
     InvalidSector,
     LockError,
+    ParseError,
     QueryNotValid,
 )
 from .router import Router
@@ -118,11 +119,15 @@ class ElmoClient:
         # Don't use state["HasChanges"] because it takes into account also events
         # that this client is ignoring. It forces the device to update too often.
         state = response.json()
-        return {
-            "has_changes": state["Areas"] or state["Inputs"],
-            "areas": state["Areas"],
-            "inputs": state["Inputs"],
-        }
+        try:
+            update = {
+                "has_changes": state["Areas"] or state["Inputs"],
+                "areas": state["Areas"],
+                "inputs": state["Inputs"],
+            }
+        except KeyError as err:
+            raise ParseError(f"Client | Unable to parse poll response: {err} is missing") from err
+        return update
 
     @contextmanager
     @require_session
