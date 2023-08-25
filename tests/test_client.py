@@ -339,6 +339,41 @@ def test_client_poll_unknown_error(server):
     assert len(server.calls) == 1
 
 
+def test_client_poll_parse_error(server):
+    """Should raise a ParseError if the response is different from what is expected.
+    In this case `Areas` and `Inputs` are missing from the response."""
+    html = """
+        {
+            "ConnectionStatus": false,
+            "CanElevate": false,
+            "LoggedIn": false,
+            "LoginInProgress": false,
+            "Events": false,
+            "Outputs": false,
+            "Anomalies": false,
+            "ReadStringsInProgress": false,
+            "ReadStringPercentage": 0,
+            "Strings": 0,
+            "ManagedAccounts": false,
+            "Temperature": false,
+            "StatusAdv": false,
+            "Images": false,
+            "AdditionalInfoSupported": true,
+            "HasChanges": false
+        }
+    """
+    server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    ids = {
+        query.SECTORS: 42,
+        query.INPUTS: 4242,
+    }
+    # Test
+    with pytest.raises(ParseError):
+        client.poll(ids)
+
+
 def test_client_lock(server, mocker):
     """Should acquire a lock if credentials are properly provided."""
     html = """[
