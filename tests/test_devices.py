@@ -2,7 +2,7 @@ import pytest
 from requests.exceptions import HTTPError
 
 from elmo import query as q
-from elmo.api.exceptions import CredentialError, ParseError
+from elmo.api.exceptions import CodeError, CredentialError, LockError, ParseError
 from elmo.devices import AlarmDevice
 
 
@@ -188,27 +188,59 @@ def test_device_arm_success(device, mocker):
     """Should arm the e-connect system using the underlying client."""
     mocker.patch.object(device._connection, "lock")
     mocker.patch.object(device._connection, "arm")
-
-    # ElmoClient.lock() and ElmoClient.arm() are already tested
-    # Check only if they are called properly and if the method handles
-    # properly exceptions
+    # Test
     device._connection._session_id = "test"
     device.arm("1234", sectors=[4])
-
     assert device._connection.lock.call_count == 1
     assert device._connection.arm.call_count == 1
     assert "1234" in device._connection.lock.call_args[0]
     assert {"sectors": [4]} == device._connection.arm.call_args[1]
 
 
+def test_device_arm_error(device, mocker):
+    """Should handle (log) connection errors."""
+    mocker.patch.object(device._connection, "lock")
+    mocker.patch.object(device._connection, "arm")
+    device._connection.lock.side_effect = HTTPError("Unable to communicate with e-Connect")
+    device._connection._session_id = "test"
+    # Test
+    with pytest.raises(HTTPError):
+        device.arm("1234", sectors=[4])
+    assert device._connection.lock.call_count == 1
+    assert device._connection.arm.call_count == 0
+
+
+def test_device_arm_lock_error(device, mocker):
+    """Should handle (log) locking errors."""
+    mocker.patch.object(device._connection, "lock")
+    mocker.patch.object(device._connection, "arm")
+    device._connection.lock.side_effect = LockError("Unable to acquire the lock")
+    device._connection._session_id = "test"
+    # Test
+    with pytest.raises(LockError):
+        device.arm("1234", sectors=[4])
+    assert device._connection.lock.call_count == 1
+    assert device._connection.arm.call_count == 0
+
+
+def test_device_arm_code_error(device, mocker):
+    """Should handle (log) code errors."""
+    mocker.patch.object(device._connection, "lock")
+    mocker.patch.object(device._connection, "arm")
+    device._connection.lock.side_effect = CodeError("Code is incorrect")
+    device._connection._session_id = "test"
+    # Test
+    with pytest.raises(CodeError):
+        device.arm("1234", sectors=[4])
+    assert device._connection.lock.call_count == 1
+    assert device._connection.arm.call_count == 0
+
+
 def test_device_disarm_success(device, mocker):
     """Should disarm the e-connect system using the underlying client."""
     mocker.patch.object(device._connection, "lock")
     mocker.patch.object(device._connection, "disarm")
-
-    # ElmoClient.lock() and ElmoClient.disarm() are already tested
-    # Check only if they are called properly and if the method handles
-    # properly exceptions
+    # Test
     device._connection._session_id = "test"
     device.disarm("1234", sectors=[4])
 
@@ -216,3 +248,42 @@ def test_device_disarm_success(device, mocker):
     assert device._connection.disarm.call_count == 1
     assert "1234" in device._connection.lock.call_args[0]
     assert {"sectors": [4]} == device._connection.disarm.call_args[1]
+
+
+def test_device_disarm_error(device, mocker):
+    """Should handle (log) connection errors."""
+    mocker.patch.object(device._connection, "lock")
+    mocker.patch.object(device._connection, "disarm")
+    device._connection.lock.side_effect = HTTPError("Unable to communicate with e-Connect")
+    device._connection._session_id = "test"
+    # Test
+    with pytest.raises(HTTPError):
+        device.disarm("1234", sectors=[4])
+    assert device._connection.lock.call_count == 1
+    assert device._connection.disarm.call_count == 0
+
+
+def test_device_disarm_lock_error(device, mocker):
+    """Should handle (log) locking errors."""
+    mocker.patch.object(device._connection, "lock")
+    mocker.patch.object(device._connection, "disarm")
+    device._connection.lock.side_effect = LockError("Unable to acquire the lock")
+    device._connection._session_id = "test"
+    # Test
+    with pytest.raises(LockError):
+        device.disarm("1234", sectors=[4])
+    assert device._connection.lock.call_count == 1
+    assert device._connection.disarm.call_count == 0
+
+
+def test_device_disarm_code_error(device, mocker):
+    """Should handle (log) code errors."""
+    mocker.patch.object(device._connection, "lock")
+    mocker.patch.object(device._connection, "disarm")
+    device._connection.lock.side_effect = CodeError("Code is incorrect")
+    device._connection._session_id = "test"
+    # Test
+    with pytest.raises(CodeError):
+        device.disarm("1234", sectors=[4])
+    assert device._connection.lock.call_count == 1
+    assert device._connection.disarm.call_count == 0

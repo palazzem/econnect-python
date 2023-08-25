@@ -3,7 +3,7 @@ import logging
 from requests.exceptions import HTTPError
 
 from . import query as q
-from .api.exceptions import CredentialError, ParseError
+from .api.exceptions import CodeError, CredentialError, LockError, ParseError
 from .const import STATE_ALARM_ARMED_AWAY, STATE_ALARM_DISARMED, STATE_ALARM_UNKNOWN
 
 _LOGGER = logging.getLogger(__name__)
@@ -108,13 +108,31 @@ class AlarmDevice:
             self.state = STATE_ALARM_DISARMED
 
     def arm(self, code, sectors=None):
-        # TODO: handle exceptions so that it logs expected errors; add tests for this
-        with self._connection.lock(code):
-            self._connection.arm(sectors=sectors)
-            self.state = STATE_ALARM_ARMED_AWAY
+        try:
+            with self._connection.lock(code):
+                self._connection.arm(sectors=sectors)
+                self.state = STATE_ALARM_ARMED_AWAY
+        except HTTPError as err:
+            _LOGGER.error(f"Device | Error while arming the system: {err}")
+            raise err
+        except LockError as err:
+            _LOGGER.error(f"Device | Error while acquiring the system lock: {err}")
+            raise err
+        except CodeError as err:
+            _LOGGER.error(f"Device | Credentials (alarm code) is incorrect: {err}")
+            raise err
 
     def disarm(self, code, sectors=None):
-        # TODO: handle exceptions so that it logs expected errors; add tests for this
-        with self._connection.lock(code):
-            self._connection.disarm(sectors=sectors)
-            self.state = STATE_ALARM_DISARMED
+        try:
+            with self._connection.lock(code):
+                self._connection.disarm(sectors=sectors)
+                self.state = STATE_ALARM_DISARMED
+        except HTTPError as err:
+            _LOGGER.error(f"Device | Error while disarming the system: {err}")
+            raise err
+        except LockError as err:
+            _LOGGER.error(f"Device | Error while acquiring the system lock: {err}")
+            raise err
+        except CodeError as err:
+            _LOGGER.error(f"Device | Credentials (alarm code) is incorrect: {err}")
+            raise err
