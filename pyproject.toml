@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "elmo"
+dynamic = ["version"]
+description = 'API adapter used to control programmatically an Elmo alarm system'
+readme = "README.md"
+requires-python = ">=3.5"
+license = "Apache-2.0"
+keywords = []
+authors = [
+  { name = "Emanuele Palazzetti", email = "emanuele.palazzetti@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.5",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "requests[security]",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy",
+  # Test
+  "pytest",
+  "pytest-cov",
+  "pytest-mock",
+  "responses",
+  "tox",
+]
+
+lint = [
+  "black",
+  "flake8",
+]
+
+all = [
+  "elmo[dev]",
+  "elmo[lint]",
+]
+
+[project.urls]
+Documentation = "https://github.com/palazzem/econnect-python#readme"
+Issues = "https://github.com/palazzem/econnect-python/issues"
+Source = "https://github.com/palazzem/econnect-python"
+
+[tool.hatch.version]
+path = "src/elmo/__about__.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
