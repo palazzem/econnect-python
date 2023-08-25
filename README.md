@@ -12,7 +12,7 @@ Through a generic configuration, the client allows:
 
 ## Requirements
 
-* Python 3.6+
+* Python 3.8+
 * `requests`
 
 ## Getting Started
