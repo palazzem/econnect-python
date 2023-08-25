@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - upstream
   pull_request:
 
 permissions:
@@ -37,8 +36,7 @@ jobs:
       - name: Upgrade pip and install required tools
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install tox -U
+          pip install tox
 
       - name: Test with tox environments
         run: tox

@@ -81,9 +81,24 @@ and ask for help in our [Discord channel](https://discord.gg/NSmAPWw8tE) if you 
 
 ## Development
 
-We accept external contributions even though the project is mostly designed for personal
-needs. If you think some parts can be exposed with a more generic interface, feel free
-to open a GitHub issue and to discuss your suggestion.
+We welcome external contributions, even though the project was initially intended for personal use. If you think some
+parts could be exposed with a more generic interface, please open a [GitHub issue](https://github.com/palazzem/econnect-python/issues)
+to discuss your suggestion.
+
+### Dev Environment
+
+To create a virtual environment and install the project and its dependencies, execute the following commands in your
+terminal:
+
+```bash
+# Create and activate a new virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Upgrade pip and install all projects and their dependencies
+pip install --upgrade pip
+pip install -e '.[all]'
+```
 
 ### Coding Guidelines
 
