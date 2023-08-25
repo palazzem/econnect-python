@@ -1,8 +1,8 @@
 import pytest
 import responses
 
-from elmo.devices import AlarmDevice
 from elmo.api.client import ElmoClient
+from elmo.devices import AlarmDevice
 
 
 @pytest.fixture

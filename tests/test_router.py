@@ -1,7 +1,7 @@
 import pytest
 
-from elmo.api.router import Router
 from elmo.api.exceptions import ValidationError
+from elmo.api.router import Router
 
 
 def test_https_is_required():

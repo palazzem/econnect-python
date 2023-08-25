@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from .exceptions import ValidationError
 
 
-class Router(object):
+class Router:
     """API router class that holds a list of endpoints
     grouped by action type.
     """

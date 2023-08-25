@@ -17,7 +17,7 @@ Please make sure to select the most appropriate type from the options provided:
 
 - **Bug Report**: If you've identified an issue with an existing feature that isn't performing as documented or expected,
 please select this option. This will help us identify and rectify problems more efficiently.
-  
+
 - **Feature Request**: Opt for this if you have an idea for a new feature or an enhancement to the current ones.
 Additionally, if you feel that a certain feature could be optimized or modified to better suit specific scenarios, this is
 the right category to bring it to our attention.

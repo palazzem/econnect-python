@@ -1,18 +1,17 @@
-import pytest
-
 from threading import Lock
 
-from requests.models import Response
+import pytest
 from requests.exceptions import HTTPError
+from requests.models import Response
 
-from elmo.api.exceptions import MissingToken, InvalidToken, LockNotAcquired
-from elmo.api.decorators import require_session, require_lock
+from elmo.api.decorators import require_lock, require_session
+from elmo.api.exceptions import InvalidToken, LockNotAcquired, MissingToken
 
 
 def test_require_session_present():
     """Should succeed if a session ID is available."""
 
-    class TestClient(object):
+    class TestClient:
         def __init__(self):
             # Session is available
             self._session_id = "test"
@@ -29,7 +28,7 @@ def test_require_session_present():
 def test_require_session_missing():
     """Should fail if a session ID is not available."""
 
-    class TestClient(object):
+    class TestClient:
         def __init__(self):
             # Session is not available
             self._session_id = None
@@ -47,7 +46,7 @@ def test_require_session_missing():
 def test_require_session_invalid():
     """Should fail if a session ID is not valid (API returns 401)."""
 
-    class TestClient(object):
+    class TestClient:
         def __init__(self):
             # Session is available
             self._session_id = "test"
@@ -68,7 +67,7 @@ def test_require_session_invalid():
 def test_require_lock():
     """Should succeed if the lock has been acquired."""
 
-    class TestClient(object):
+    class TestClient:
         def __init__(self):
             # Lock attribute
             self._lock = Lock()
@@ -85,7 +84,7 @@ def test_require_lock():
 def test_require_lock_fails():
     """Should fail if the lock has not been acquired."""
 
-    class TestClient(object):
+    class TestClient:
         def __init__(self):
             # Lock attribute
             self._lock = Lock()
@@ -102,7 +101,7 @@ def test_require_lock_fails():
 def test_require_lock_not_valid():
     """Should fail if the obtained lock is not valid anymore (API returns 401)."""
 
-    class TestClient(object):
+    class TestClient:
         def __init__(self):
             # Lock attribute
             self._lock = Lock()
