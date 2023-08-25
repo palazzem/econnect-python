@@ -1,19 +1,18 @@
 import pytest
 import responses
-
 from requests.exceptions import HTTPError
 
 from elmo import query
 from elmo.api.client import ElmoClient
 from elmo.api.exceptions import (
+    CodeError,
+    CredentialError,
+    InvalidInput,
+    InvalidSector,
+    InvalidToken,
+    LockError,
     LockNotAcquired,
     QueryNotValid,
-    CredentialError,
-    InvalidToken,
-    CodeError,
-    InvalidSector,
-    InvalidInput,
-    LockError,
 )
 
 
@@ -92,9 +91,7 @@ def test_client_auth_forbidden(server, client):
 
 def test_client_auth_unknown_error(server, client):
     """Should raise an exception if there is an unknown error."""
-    server.add(
-        responses.GET, "https://example.com/api/login", body="Server Error", status=500
-    )
+    server.add(responses.GET, "https://example.com/api/login", body="Server Error", status=500)
 
     with pytest.raises(HTTPError):
         client.auth("test", "test")
@@ -129,12 +126,8 @@ def test_client_auth_redirect(server, client):
             "IsElevation": false
         }
     """
-    server.add(
-        responses.GET, "https://example.com/api/login", body=redirect, status=200
-    )
-    server.add(
-        responses.GET, "https://redirect.example.com/api/login", body=login, status=200
-    )
+    server.add(responses.GET, "https://example.com/api/login", body=redirect, status=200)
+    server.add(responses.GET, "https://redirect.example.com/api/login", body=login, status=200)
 
     assert client.auth("test", "test")
     assert client._router._base_url == "https://redirect.example.com"
@@ -152,9 +145,7 @@ def test_client_auth_infinite_redirect(server, client):
             "RedirectTo": "https://redirect.example.com"
         }
     """
-    server.add(
-        responses.GET, "https://example.com/api/login", body=redirect, status=200
-    )
+    server.add(responses.GET, "https://example.com/api/login", body=redirect, status=200)
     server.add(
         responses.GET,
         "https://redirect.example.com/api/login",
@@ -346,9 +337,7 @@ def test_client_lock(server, client, mocker):
             "Successful": true
         }
     ]"""
-    server.add(
-        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
-    )
+    server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
@@ -366,9 +355,7 @@ def test_client_lock_wrong_code(server, client, mocker):
             "Successful": false
         }
     ]"""
-    server.add(
-        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
-    )
+    server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
@@ -417,9 +404,7 @@ def test_client_lock_calls_unlock(server, client, mocker):
             "Successful": true
         }
     ]"""
-    server.add(
-        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
-    )
+    server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
@@ -438,9 +423,7 @@ def test_client_lock_and_unlock_with_exception(server, client, mocker):
             "Successful": true
         }
     ]"""
-    server.add(
-        responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200
-    )
+    server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
     mocker.patch.object(client, "unlock")
     client._session_id = "test"
 
@@ -1130,9 +1113,7 @@ def test_client_get_descriptions_error(server, client):
 def test_client_get_sectors_status(server, client, sectors_json, mocker):
     """Should query a Elmo system to retrieve sectors status."""
     # query() depends on _get_descriptions()
-    server.add(
-        responses.POST, "https://example.com/api/areas", body=sectors_json, status=200
-    )
+    server.add(responses.POST, "https://example.com/api/areas", body=sectors_json, status=200)
     mocker.patch.object(client, "_get_descriptions")
     client._get_descriptions.return_value = {
         9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
@@ -1176,9 +1157,7 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
 def test_client_get_inputs_status(server, client, inputs_json, mocker):
     """Should query a Elmo system to retrieve inputs status."""
     # query() depends on _get_descriptions()
-    server.add(
-        responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200
-    )
+    server.add(responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200)
     mocker.patch.object(client, "_get_descriptions")
     client._get_descriptions.return_value = {
         10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},

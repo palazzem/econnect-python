@@ -1,6 +1,6 @@
 from requests.exceptions import HTTPError
 
-from .exceptions import MissingToken, InvalidToken, LockNotAcquired
+from .exceptions import InvalidToken, LockNotAcquired, MissingToken
 
 
 def require_session(func):
@@ -54,9 +54,7 @@ def require_lock(func):
                 # 403: Method has been called without obtaining the server lock
                 if err.response.status_code == 403:
                     self._lock.release()
-                    raise LockNotAcquired(
-                        "A lock must be acquired via `lock()` method."
-                    )
+                    raise LockNotAcquired("A lock must be acquired via `lock()` method.")
                 raise err
 
     return func_wrapper

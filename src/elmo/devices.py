@@ -1,9 +1,5 @@
-from .const import (
-    STATE_ALARM_UNKNOWN,
-    STATE_ALARM_ARMED_AWAY,
-    STATE_ALARM_DISARMED,
-)
 from . import query as q
+from .const import STATE_ALARM_ARMED_AWAY, STATE_ALARM_DISARMED, STATE_ALARM_UNKNOWN
 
 
 class AlarmDevice:

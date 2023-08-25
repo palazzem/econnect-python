@@ -1,25 +1,24 @@
-from threading import Lock
 from contextlib import contextmanager
 from functools import lru_cache
+from threading import Lock
 
 from requests import Session
 from requests.exceptions import HTTPError
 
-from .router import Router
-from .decorators import require_session, require_lock
-from .exceptions import (
-    QueryNotValid,
-    CredentialError,
-    CodeError,
-    InvalidSector,
-    InvalidInput,
-    LockError,
-)
-
 from .. import query as q
+from .decorators import require_lock, require_session
+from .exceptions import (
+    CodeError,
+    CredentialError,
+    InvalidInput,
+    InvalidSector,
+    LockError,
+    QueryNotValid,
+)
+from .router import Router
 
 
-class ElmoClient(object):
+class ElmoClient:
     """ElmoClient class provides all the functionalities to connect
     to an Elmo system. During the authentication a short-lived token is stored
     in the instance and is used to arm/disarm the system.
@@ -249,9 +248,7 @@ class ElmoClient(object):
         # Raise an exception if errors are detected
         if errors:
             invalid_sectors = ",".join(str(x) for x in errors)
-            raise InvalidSector(
-                "Selected sectors don't exist: {}".format(invalid_sectors)
-            )
+            raise InvalidSector("Selected sectors don't exist: {}".format(invalid_sectors))
 
         return True
 
@@ -313,9 +310,7 @@ class ElmoClient(object):
         # Raise an exception if errors are detected
         if errors:
             invalid_sectors = ",".join(str(x) for x in errors)
-            raise InvalidSector(
-                "Selected sectors don't exist: {}".format(invalid_sectors)
-            )
+            raise InvalidSector("Selected sectors don't exist: {}".format(invalid_sectors))
 
         return True
 
