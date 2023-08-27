@@ -3,7 +3,6 @@ import responses
 from fixtures import responses as r
 
 from elmo.api.client import ElmoClient
-from elmo.devices import AlarmDevice
 
 
 @pytest.fixture(scope="function")
@@ -31,14 +30,6 @@ def client():
         server.add(responses.POST, "https://example.com/api/areas", body=r.AREAS, status=200)
         server.add(responses.POST, "https://example.com/api/inputs", body=r.INPUTS, status=200)
         yield client
-
-
-@pytest.fixture
-def device(client, mocker):
-    """Create an AlarmDevice with a mocked client."""
-    client._session = mocker.Mock()
-    device = AlarmDevice(connection=client)
-    yield device
 
 
 @pytest.fixture
