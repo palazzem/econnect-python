@@ -49,7 +49,6 @@ class AlarmDevice:
         """
         try:
             self._connection.auth(username, password)
-            self.update()
         except HTTPError as err:
             _LOGGER.error(f"Device | Error while authenticating with e-Connect: {err}")
             raise err
