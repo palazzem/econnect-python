@@ -13,6 +13,7 @@ from .exceptions import (
     InvalidInput,
     InvalidSector,
     LockError,
+    ParseError,
     QueryNotValid,
 )
 from .router import Router
@@ -50,6 +51,7 @@ class ElmoClient:
             password: the Password used for the authentication.
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
+            CredentialError: if credentials are not correct
         Returns:
             The access token retrieved from the API. The token is also cached in
             the `ElmoClient` instance.
@@ -96,6 +98,7 @@ class ElmoClient:
 
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
+            ParseError: if the response cannot be parsed because the format is unexpected.
         Returns:
             A dictionary that includes what items have been changed. The following
             structure means that `areas` are not changed, while inputs are:
@@ -117,11 +120,15 @@ class ElmoClient:
         # Don't use state["HasChanges"] because it takes into account also events
         # that this client is ignoring. It forces the device to update too often.
         state = response.json()
-        return {
-            "has_changes": state["Areas"] or state["Inputs"],
-            "areas": state["Areas"],
-            "inputs": state["Inputs"],
-        }
+        try:
+            update = {
+                "has_changes": state["Areas"] or state["Inputs"],
+                "areas": state["Areas"],
+                "inputs": state["Inputs"],
+            }
+        except KeyError as err:
+            raise ParseError(f"Client | Unable to parse poll response: {err} is missing") from err
+        return update
 
     @contextmanager
     @require_session
@@ -457,22 +464,39 @@ class ElmoClient:
 
             from elmo import query
 
-            sectors = client.query(query.SECTORS)
-            inputs = client.query(query.INPUTS)
+            sectors = client.query(query.SECTORS).get("sectors")
+            inputs = client.query(query.INPUTS).get("inputs")
 
         Raises:
             QueryNotValid: if the query is not recognized.
             HTTPError: if there is an error raised by the API (not 2xx response).
+            ParseError: if the response cannot be parsed because the format is unexpected.
         Returns:
-            A list of items containing the raw query. Every item is an entry
-            (sector or input) represented by a `dict` with the following structure:
+            A dict representing the raw query retrieved by the backend call. The structure is the following:
                 {
-                    "id": 1,
-                    "index": 0,
-                    "element": 3,
-                    "excluded": False,
-                    "name": "Kitchen",
+                    'last_id': 3,
+                    'sectors': {
+                        0: {
+                            'id': 1,
+                            'index': 0,
+                            'element': 1,
+                            'excluded': False,
+                            'status': True,
+                            'name': 'S1 Living Room'
+                        },
+                        1: {
+                            'id': 2,
+                            'index': 1,
+                            'element': 2,
+                            'excluded': False,
+                            'status': True,
+                            'name': 'S2 Bedroom'
+                        },
+                    },
                 }
+            `last_id`: is the last ID of the query, used to retrieve new state changes
+            `sectors`: is the key you use to retrieve sectors if that was the query
+            `inputs`: is the key you use to retrieve inputs if that was the query
         """
         # Query detection
         if query == q.SECTORS:
@@ -503,17 +527,20 @@ class ElmoClient:
             "last_id": entries[-1]["Id"],
             key_group: items,
         }
-        for entry in entries:
-            if entry["InUse"]:
-                item = {
-                    "id": entry.get("Id"),
-                    "index": entry.get("Index"),
-                    "element": entry.get("Element"),
-                    "excluded": entry.get("Excluded", False),
-                    "status": entry.get(status, False),
-                    "name": descriptions[query][entry.get("Index")],
-                }
+        try:
+            for entry in entries:
+                if entry["InUse"]:
+                    item = {
+                        "id": entry.get("Id"),
+                        "index": entry.get("Index"),
+                        "element": entry.get("Element"),
+                        "excluded": entry.get("Excluded", False),
+                        "status": entry.get(status, False),
+                        "name": descriptions[query][entry.get("Index")],
+                    }
 
-                items[entry.get("Index")] = item
+                    items[entry.get("Index")] = item
+        except KeyError as err:
+            raise ParseError(f"Client | Unable to parse query response: {err}") from err
 
         return result

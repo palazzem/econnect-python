@@ -22,6 +22,12 @@ class QueryNotValid(BaseException):
     default_message = "Query not available."
 
 
+class ParseError(BaseException):
+    """Exception raised when there is an error parsing the response."""
+
+    default_message = "An error occurred while parsing the response. Probably the input is unexpected."
+
+
 class APIException(BaseException):
     """Exception raised when there is an API error."""
 

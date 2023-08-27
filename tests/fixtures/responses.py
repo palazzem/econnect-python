@@ -110,6 +110,30 @@ STRINGS = """[
         "Description": "Entryway Sensor",
         "Created": "/Date(1546004147493+0100)/",
         "Version": "AAAAAAAAgRw="
+    },
+    {
+        "AccountId": 1,
+        "Class": 10,
+        "Index": 1,
+        "Description": "Outdoor Sensor 1",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
+    },
+    {
+        "AccountId": 1,
+        "Class": 10,
+        "Index": 2,
+        "Description": "Outdoor Sensor 2",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
+    },
+    {
+        "AccountId": 3,
+        "Class": 10,
+        "Index": 3,
+        "Description": "Outdoor Sensor 3",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
     }
 ]"""
 AREAS = """[
@@ -209,7 +233,7 @@ INPUTS = """[
        "Excluded": false,
        "InUse": false,
        "IsVideo": false,
-       "Id": 4,
+       "Id": 42,
        "Index": 3,
        "Element": 4,
        "CommandId": 0,
