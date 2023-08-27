@@ -90,15 +90,16 @@ class AlarmDevice:
         """
         # TODO: handle exceptions so that it logs expected errors; add tests for this
         # Retrieve sectors and inputs
-        sectors_armed, sectors_disarmed, lastSector = self._connection.query(q.SECTORS)
-        inputs_alerted, inputs_wait, lastInput = self._connection.query(q.INPUTS)
-
-        self.sectors_armed = sectors_armed
-        self.sectors_disarmed = sectors_disarmed
-        self.inputs_alerted = inputs_alerted
-        self.inputs_wait = inputs_wait
-        self._lastIds[q.SECTORS] = lastSector
-        self._lastIds[q.INPUTS] = lastInput
+        sectors = self._connection.query(q.SECTORS)
+        inputs = self._connection.query(q.INPUTS)
+        # TODO: we should just store `sectors` and `inputs` instead of filtering at this step
+        # NOTE: keeping the filtering for backward compatibility with HA integration
+        self.sectors_armed = {key: value for key, value in sectors["sectors"].items() if value["status"]}
+        self.sectors_disarmed = {key: value for key, value in sectors["sectors"].items() if not value["status"]}
+        self.inputs_alerted = {key: value for key, value in inputs["inputs"].items() if value["status"]}
+        self.inputs_wait = {key: value for key, value in inputs["inputs"].items() if not value["status"]}
+        self._lastIds[q.SECTORS] = sectors.get("last_id", 0)
+        self._lastIds[q.INPUTS] = inputs.get("last_id", 0)
 
         # Update the internal state machine
         if self.sectors_armed:
