@@ -138,6 +138,22 @@ def test_device_update_success(client, mocker):
     }
 
 
+def test_device_update_http_error(client, mocker):
+    """Tests if device's update method raises HTTPError when querying."""
+    device = AlarmDevice(connection=client)
+    mocker.patch.object(device._connection, "query", side_effect=HTTPError("HTTP Error"))
+    with pytest.raises(HTTPError):
+        device.update()
+
+
+def test_device_update_parse_error(client, mocker):
+    """Tests if update method raises ParseError when querying."""
+    device = AlarmDevice(connection=client)
+    mocker.patch.object(device._connection, "query", side_effect=ParseError("Parse Error"))
+    with pytest.raises(ParseError):
+        device.update()
+
+
 def test_device_update_state_machine_armed(client, mocker):
     """Should check if the state machine is properly updated after calling update()."""
     device = AlarmDevice(connection=client)

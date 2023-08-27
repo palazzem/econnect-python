@@ -5,6 +5,7 @@ from requests.exceptions import HTTPError
 from . import query as q
 from .api.exceptions import CodeError, CredentialError, LockError, ParseError
 from .const import STATE_ALARM_ARMED_AWAY, STATE_ALARM_DISARMED, STATE_ALARM_UNKNOWN
+from .utils import _filter_data
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,37 +76,45 @@ class AlarmDevice:
             raise err
 
     def update(self):
-        """Update the internal status of armed and disarmed sectors, or inputs
-        that are in alerted state or that are waiting. This method checks:
-            * If any sector is in alerted state
-            * If the alarm for each sector is armed or disarmed
-            * If the alarm for each input is in alerted state or not
+        """Updates the internal state of the device based on the latest data.
 
-        Returns:
-            `None`, results are stored as `device` attributes:
-            * sectors_armed
-            * sectors_disarmed
-            * inputs_alerted
-            * inputs_wait
+        This method performs the following actions:
+        1. Queries for the latest sectors and inputs using the internal connection.
+        2. Filters the retrieved sectors and inputs to categorize them based on their status.
+        3. Updates the last known IDs for sectors and inputs.
+        4. Updates internal state for sectors' and inputs' statuses.
+
+        Raises:
+            HTTPError: If there's an error while making the HTTP request.
+            ParseError: If there's an error while parsing the response.
+
+        Attributes updated:
+            sectors_armed (dict): A dictionary of sectors that are armed.
+            sectors_disarmed (dict): A dictionary of sectors that are disarmed.
+            inputs_alerted (dict): A dictionary of inputs that are in an alerted state.
+            inputs_wait (dict): A dictionary of inputs that are in a wait state.
+            _lastIds (dict): Updated last known IDs for sectors and inputs.
+            state (str): Updated internal state of the device.
         """
-        # TODO: handle exceptions so that it logs expected errors; add tests for this
         # Retrieve sectors and inputs
-        sectors = self._connection.query(q.SECTORS)
-        inputs = self._connection.query(q.INPUTS)
-        # TODO: we should just store `sectors` and `inputs` instead of filtering at this step
-        # NOTE: keeping the filtering for backward compatibility with HA integration
-        self.sectors_armed = {key: value for key, value in sectors["sectors"].items() if value["status"]}
-        self.sectors_disarmed = {key: value for key, value in sectors["sectors"].items() if not value["status"]}
-        self.inputs_alerted = {key: value for key, value in inputs["inputs"].items() if value["status"]}
-        self.inputs_wait = {key: value for key, value in inputs["inputs"].items() if not value["status"]}
+        try:
+            sectors = self._connection.query(q.SECTORS)
+            inputs = self._connection.query(q.INPUTS)
+        except (HTTPError, ParseError) as err:
+            _LOGGER.error(f"Device | Error while checking if there are updates: {err}")
+            raise
+
+        # Filter sectors and inputs
+        self.sectors_armed = _filter_data(sectors, "sectors", True)
+        self.sectors_disarmed = _filter_data(sectors, "sectors", False)
+        self.inputs_alerted = _filter_data(inputs, "inputs", True)
+        self.inputs_wait = _filter_data(inputs, "inputs", False)
+
         self._lastIds[q.SECTORS] = sectors.get("last_id", 0)
         self._lastIds[q.INPUTS] = inputs.get("last_id", 0)
 
         # Update the internal state machine
-        if self.sectors_armed:
-            self.state = STATE_ALARM_ARMED_AWAY
-        else:
-            self.state = STATE_ALARM_DISARMED
+        self.state = STATE_ALARM_ARMED_AWAY if self.sectors_armed else STATE_ALARM_DISARMED
 
     def arm(self, code, sectors=None):
         try:
