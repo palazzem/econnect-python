@@ -48,7 +48,7 @@ def test_client_constructor_with_session_id():
     assert client._session_id == "test"
 
 
-def test_client_auth_success(server, client):
+def test_client_auth_success(server):
     """Should authenticate with valid credentials."""
     html = """
         {
@@ -68,13 +68,14 @@ def test_client_auth_success(server, client):
         }
     """
     server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
-
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
     assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
     assert client._session_id == "00000000-0000-0000-0000-000000000000"
     assert len(server.calls) == 1
 
 
-def test_client_auth_forbidden(server, client):
+def test_client_auth_forbidden(server):
     """Should raise an exception if credentials are not valid."""
     server.add(
         responses.GET,
@@ -82,24 +83,26 @@ def test_client_auth_forbidden(server, client):
         body="Username or Password is invalid",
         status=403,
     )
-
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
     with pytest.raises(CredentialError):
         client.auth("test", "test")
     assert client._session_id is None
     assert len(server.calls) == 1
 
 
-def test_client_auth_unknown_error(server, client):
+def test_client_auth_unknown_error(server):
     """Should raise an exception if there is an unknown error."""
     server.add(responses.GET, "https://example.com/api/login", body="Server Error", status=500)
-
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
     with pytest.raises(HTTPError):
         client.auth("test", "test")
     assert client._session_id is None
     assert len(server.calls) == 1
 
 
-def test_client_auth_redirect(server, client):
+def test_client_auth_redirect(server):
     """Should update the client Router if a redirect is required."""
     redirect = """
         {
@@ -128,14 +131,15 @@ def test_client_auth_redirect(server, client):
     """
     server.add(responses.GET, "https://example.com/api/login", body=redirect, status=200)
     server.add(responses.GET, "https://redirect.example.com/api/login", body=login, status=200)
-
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
     assert client.auth("test", "test")
     assert client._router._base_url == "https://redirect.example.com"
     assert client._session_id == "99999999-9999-9999-9999-999999999999"
     assert len(server.calls) == 2
 
 
-def test_client_auth_infinite_redirect(server, client):
+def test_client_auth_infinite_redirect(server):
     """Should prevent infinite redirects in the auth() call."""
     redirect = """
         {
@@ -152,7 +156,8 @@ def test_client_auth_infinite_redirect(server, client):
         body=redirect,
         status=200,
     )
-
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
     assert client.auth("test", "test")
     assert client._router._base_url == "https://redirect.example.com"
     assert client._session_id == "00000000-0000-0000-0000-000000000000"
@@ -167,8 +172,9 @@ def test_client_auth_without_domain(server):
             "Redirect": false
         }
     """
-    client = ElmoClient(base_url="https://example.com")
     server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com")
+    # Test
     client.auth("test", "test")
     assert len(server.calls) == 1
     assert "domain" not in server.calls[0].request.params
@@ -182,14 +188,15 @@ def test_client_auth_with_domain(server):
             "Redirect": false
         }
     """
-    client = ElmoClient(base_url="https://example.com", domain="domain")
     server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
     client.auth("test", "test")
     assert len(server.calls) == 1
     assert server.calls[0].request.params["domain"] == "domain"
 
 
-def test_client_poll(server, client):
+def test_client_poll(server):
     """Should leverage long-polling endpoint to grab the status."""
     html = """
         {
@@ -214,12 +221,13 @@ def test_client_poll(server, client):
         }
     """
     server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
     }
-
+    # Test
     state = client.poll(ids)
     assert len(state.keys()) == 3
     # Check response
@@ -235,7 +243,7 @@ def test_client_poll(server, client):
     assert "ConnectionStatus=1" in body
 
 
-def test_client_poll_with_changes(server, client):
+def test_client_poll_with_changes(server):
     """Should return a dict with updated states."""
     html = """
         {
@@ -260,12 +268,13 @@ def test_client_poll_with_changes(server, client):
         }
     """
     server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
     }
-
+    # Test
     state = client.poll(ids)
     assert len(state.keys()) == 3
     assert state["has_changes"] is True
@@ -273,7 +282,7 @@ def test_client_poll_with_changes(server, client):
     assert state["areas"] is True
 
 
-def test_client_poll_ignore_has_changes(server, client):
+def test_client_poll_ignore_has_changes(server):
     """Should ignore HasChanges value to prevent `event` updates."""
     html = """
         {
@@ -298,18 +307,19 @@ def test_client_poll_ignore_has_changes(server, client):
         }
     """
     server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
     }
-
+    # Test
     state = client.poll(ids)
     assert len(state.keys()) == 3
     assert state["has_changes"] is False
 
 
-def test_client_poll_unknown_error(server, client):
+def test_client_poll_unknown_error(server):
     """Should raise an Exception for unknown status code."""
     server.add(
         responses.POST,
@@ -317,18 +327,19 @@ def test_client_poll_unknown_error(server, client):
         body="Server Error",
         status=500,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
     }
-
+    # Test
     with pytest.raises(HTTPError):
         client.poll(ids)
     assert len(server.calls) == 1
 
 
-def test_client_lock(server, client, mocker):
+def test_client_lock(server, mocker):
     """Should acquire a lock if credentials are properly provided."""
     html = """[
         {
@@ -338,15 +349,16 @@ def test_client_lock(server, client, mocker):
         }
     ]"""
     server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
-    mocker.patch.object(client, "unlock")
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    mocker.patch.object(client, "unlock")
+    # Test
     with client.lock("test"):
         assert not client._lock.acquire(False)
     assert len(server.calls) == 1
 
 
-def test_client_lock_wrong_code(server, client, mocker):
+def test_client_lock_wrong_code(server, mocker):
     """Should raise a CodeError if inserted code is not correct."""
     html = """[
         {
@@ -356,28 +368,30 @@ def test_client_lock_wrong_code(server, client, mocker):
         }
     ]"""
     server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
-    mocker.patch.object(client, "unlock")
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    mocker.patch.object(client, "unlock")
+    # Test
     with pytest.raises(CodeError):
         with client.lock("test"):
             pass
     assert len(server.calls) == 1
 
 
-def test_client_lock_called_twice(server, client, mocker):
+def test_client_lock_called_twice(server, mocker):
     """Should raise a CodeError if Lock() is called twice."""
     server.add(responses.POST, "https://example.com/api/panel/syncLogin", status=403)
-    mocker.patch.object(client, "unlock")
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    mocker.patch.object(client, "unlock")
+    # Test
     with pytest.raises(LockError):
         with client.lock("test"):
             pass
     assert len(server.calls) == 1
 
 
-def test_client_lock_unknown_error(server, client, mocker):
+def test_client_lock_unknown_error(server, mocker):
     """Should raise an Exception for unknown status code."""
     server.add(
         responses.POST,
@@ -385,17 +399,17 @@ def test_client_lock_unknown_error(server, client, mocker):
         body="Server Error",
         status=500,
     )
-
-    mocker.patch.object(client, "unlock")
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    mocker.patch.object(client, "unlock")
+    # Test
     with pytest.raises(HTTPError):
         with client.lock(None):
             pass
     assert len(server.calls) == 1
 
 
-def test_client_lock_calls_unlock(server, client, mocker):
+def test_client_lock_calls_unlock(server, mocker):
     """Should call unlock() when exiting from the context."""
     html = """[
         {
@@ -405,16 +419,17 @@ def test_client_lock_calls_unlock(server, client, mocker):
         }
     ]"""
     server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
-    mocker.patch.object(client, "unlock")
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    mocker.patch.object(client, "unlock")
+    # Test
     with client.lock("test"):
         pass
     assert client.unlock.called is True
     assert len(server.calls) == 1
 
 
-def test_client_lock_and_unlock_with_exception(server, client, mocker):
+def test_client_lock_and_unlock_with_exception(server, mocker):
     """Should call unlock() even if an exception is raised in the block."""
     html = """[
         {
@@ -424,9 +439,10 @@ def test_client_lock_and_unlock_with_exception(server, client, mocker):
         }
     ]"""
     server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
-    mocker.patch.object(client, "unlock")
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    mocker.patch.object(client, "unlock")
+    # Test
     with pytest.raises(Exception):
         with client.lock("test"):
             raise Exception
@@ -434,7 +450,7 @@ def test_client_lock_and_unlock_with_exception(server, client, mocker):
     assert len(server.calls) == 1
 
 
-def test_client_unlock(server, client):
+def test_client_unlock(server):
     """Should call the API and release the system lock."""
     html = """[
         {
@@ -449,25 +465,27 @@ def test_client_unlock(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.unlock() is True
     assert client._lock.acquire(False)
     assert len(server.calls) == 1
 
 
-def test_client_unlock_fails_missing_lock(server, client):
+def test_client_unlock_fails_missing_lock(server):
     """unlock() should fail without calling the endpoint if Lock() has not been acquired."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    # Test
     with pytest.raises(LockNotAcquired):
         client.unlock()
     assert client._lock.acquire(False)
     assert len(server.calls) == 0
 
 
-def test_client_unlock_fails_forbidden(server, client):
+def test_client_unlock_fails_forbidden(server):
     """Should fail if wrong credentials are used."""
     html = """[
         {
@@ -482,17 +500,17 @@ def test_client_unlock_fails_forbidden(server, client):
         body=html,
         status=403,
     )
-
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(LockNotAcquired):
         client.unlock()
     assert not client._lock.locked()
     assert len(server.calls) == 1
 
 
-def test_client_unlock_fails_unexpected_error(server, client):
+def test_client_unlock_fails_unexpected_error(server):
     """Should raise an error and keep the lock if the server has problems."""
     html = """[
         {
@@ -507,16 +525,17 @@ def test_client_unlock_fails_unexpected_error(server, client):
         body=html,
         status=500,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(HTTPError):
         client.unlock()
     assert not client._lock.acquire(False)
     assert len(server.calls) == 1
 
 
-def test_client_arm(server, client):
+def test_client_arm(server):
     """Should call the API and arm the system."""
     html = """[
         {
@@ -531,9 +550,10 @@ def test_client_arm(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.arm() is True
     assert len(server.calls) == 1
     body = server.calls[0].request.body.split("&")
@@ -543,7 +563,7 @@ def test_client_arm(server, client):
     assert "sessionId=test" in body
 
 
-def test_client_arm_sectors(server, client):
+def test_client_arm_sectors(server):
     """Should call the API and arm only the given sectors."""
     html = """[
         {
@@ -558,9 +578,10 @@ def test_client_arm_sectors(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.arm([3, 4]) is True
     assert len(server.calls) == 2
     body = server.calls[0].request.body.split("&")
@@ -575,32 +596,34 @@ def test_client_arm_sectors(server, client):
     assert "sessionId=test" in body
 
 
-def test_client_arm_fails_missing_lock(server, client):
+def test_client_arm_fails_missing_lock(server):
     """arm() should fail without calling the endpoint if Lock() has not been acquired."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    # Test
     with pytest.raises(LockNotAcquired):
         client.arm()
     assert client._lock.acquire(False)
     assert len(server.calls) == 0
 
 
-def test_client_arm_fails_missing_session(server, client):
+def test_client_arm_fails_missing_session(server):
     """Should fail if a wrong access token is used."""
     server.add(
         responses.POST,
         "https://example.com/api/panel/syncSendCommand",
         status=401,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(InvalidToken):
         client.arm()
     assert len(server.calls) == 1
 
 
-def test_client_arm_fails_wrong_sector(server, client):
+def test_client_arm_fails_wrong_sector(server):
     """Should fail if a not existing sector is used."""
     html = """[
         {
@@ -615,14 +638,15 @@ def test_client_arm_fails_wrong_sector(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(InvalidSector):
         assert client.arm([200])
 
 
-def test_client_arm_fails_unknown_error(server, client):
+def test_client_arm_fails_unknown_error(server):
     """Should fail if an unknown error happens."""
     server.add(
         responses.POST,
@@ -630,15 +654,16 @@ def test_client_arm_fails_unknown_error(server, client):
         body="Server Error",
         status=500,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(HTTPError):
         client.arm()
     assert len(server.calls) == 1
 
 
-def test_client_disarm(server, client):
+def test_client_disarm(server):
     """Should call the API and disarm the system."""
     html = """[
         {
@@ -653,9 +678,10 @@ def test_client_disarm(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.disarm() is True
     assert len(server.calls) == 1
     body = server.calls[0].request.body.split("&")
@@ -665,7 +691,7 @@ def test_client_disarm(server, client):
     assert "sessionId=test" in body
 
 
-def test_client_disarm_sectors(server, client):
+def test_client_disarm_sectors(server):
     """Should call the API and disarm only the given sectors."""
     html = """[
         {
@@ -680,9 +706,10 @@ def test_client_disarm_sectors(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.disarm([3, 4]) is True
     assert len(server.calls) == 2
     body = server.calls[0].request.body.split("&")
@@ -697,32 +724,34 @@ def test_client_disarm_sectors(server, client):
     assert "sessionId=test" in body
 
 
-def test_client_disarm_fails_missing_lock(server, client):
+def test_client_disarm_fails_missing_lock(server):
     """disarm() should fail without calling the endpoint if Lock() has not been acquired."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    # Test
     with pytest.raises(LockNotAcquired):
         client.disarm()
     assert client._lock.acquire(False)
     assert len(server.calls) == 0
 
 
-def test_client_disarm_fails_missing_session(server, client):
+def test_client_disarm_fails_missing_session(server):
     """Should fail if a wrong access token is used."""
     server.add(
         responses.POST,
         "https://example.com/api/panel/syncSendCommand",
         status=401,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(InvalidToken):
         client.disarm()
     assert len(server.calls) == 1
 
 
-def test_client_disarm_fails_wrong_sector(server, client):
+def test_client_disarm_fails_wrong_sector(server):
     """Should fail if a not existing sector is used."""
     html = """[
         {
@@ -737,14 +766,15 @@ def test_client_disarm_fails_wrong_sector(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(InvalidSector):
         assert client.disarm([200])
 
 
-def test_client_disarm_fails_unknown_error(server, client):
+def test_client_disarm_fails_unknown_error(server):
     """Should fail if an unknown error happens."""
     server.add(
         responses.POST,
@@ -752,15 +782,16 @@ def test_client_disarm_fails_unknown_error(server, client):
         body="Server Error",
         status=500,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "unknown"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(HTTPError):
         client.disarm()
     assert len(server.calls) == 1
 
 
-def test_client_include(server, client):
+def test_client_include(server):
     """Should call the API and include the given input."""
     html = """[
         {
@@ -776,9 +807,10 @@ def test_client_include(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.include([3]) is True
     assert len(server.calls) == 1
     body = server.calls[0].request.body.split("&")
@@ -788,7 +820,7 @@ def test_client_include(server, client):
     assert "sessionId=test" in body
 
 
-def test_client_include_multiple_inputs(server, client):
+def test_client_include_multiple_inputs(server):
     """Should call the API and include given inputs."""
     html = """[
         {
@@ -804,9 +836,10 @@ def test_client_include_multiple_inputs(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.include([3, 4]) is True
     assert len(server.calls) == 2
     body = server.calls[0].request.body.split("&")
@@ -821,32 +854,34 @@ def test_client_include_multiple_inputs(server, client):
     assert "sessionId=test" in body
 
 
-def test_client_include_fails_missing_lock(server, client):
+def test_client_include_fails_missing_lock(server):
     """include() should fail without calling the endpoint if Lock() has not been acquired."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    # Test
     with pytest.raises(LockNotAcquired):
         client.include([1])
     assert client._lock.acquire(False)
     assert len(server.calls) == 0
 
 
-def test_client_include_fails_missing_session(server, client):
+def test_client_include_fails_missing_session(server):
     """Should fail if a wrong access token is used."""
     server.add(
         responses.POST,
         "https://example.com/api/panel/syncSendCommand",
         status=401,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(InvalidToken):
         client.include([1])
     assert len(server.calls) == 1
 
 
-def test_client_include_fails_wrong_input(server, client):
+def test_client_include_fails_wrong_input(server):
     """Should fail if a not existing input is used."""
     html = """[
         {
@@ -862,14 +897,15 @@ def test_client_include_fails_wrong_input(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(InvalidInput):
         assert client.include([9000])
 
 
-def test_client_include_fails_unknown_error(server, client):
+def test_client_include_fails_unknown_error(server):
     """Should fail if an unknown error happens."""
     server.add(
         responses.POST,
@@ -877,15 +913,16 @@ def test_client_include_fails_unknown_error(server, client):
         body="Server Error",
         status=500,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(HTTPError):
         client.include([1])
     assert len(server.calls) == 1
 
 
-def test_client_exclude(server, client):
+def test_client_exclude(server):
     """Should call the API and exclude only the given inputs."""
     html = """[
         {
@@ -901,9 +938,10 @@ def test_client_exclude(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.exclude([3]) is True
     assert len(server.calls) == 1
     body = server.calls[0].request.body.split("&")
@@ -913,7 +951,7 @@ def test_client_exclude(server, client):
     assert "sessionId=test" in body
 
 
-def est_client_exclude_multiple_inputs(server, client):
+def est_client_exclude_multiple_inputs(server):
     """Should call the API and exclude only the given inputs."""
     html = """[
         {
@@ -929,9 +967,10 @@ def est_client_exclude_multiple_inputs(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     assert client.exclude([3, 4]) is True
     assert len(server.calls) == 2
     body = server.calls[0].request.body.split("&")
@@ -946,32 +985,34 @@ def est_client_exclude_multiple_inputs(server, client):
     assert "sessionId=test" in body
 
 
-def test_client_exclude_fails_missing_lock(server, client):
+def test_client_exclude_fails_missing_lock(server):
     """exclude() should fail without calling the endpoint if Lock() has not been acquired."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-
+    # Test
     with pytest.raises(LockNotAcquired):
         client.exclude([1])
     assert client._lock.acquire(False)
     assert len(server.calls) == 0
 
 
-def test_client_exclude_fails_missing_session(server, client):
+def test_client_exclude_fails_missing_session(server):
     """Should fail if a wrong access token is used."""
     server.add(
         responses.POST,
         "https://example.com/api/panel/syncSendCommand",
         status=401,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(InvalidToken):
         client.exclude([1])
     assert len(server.calls) == 1
 
 
-def test_client_exclude_fails_wrong_input(server, client):
+def test_client_exclude_fails_wrong_input(server):
     """Should fail if a not existing input is used."""
     html = """[
         {
@@ -987,14 +1028,15 @@ def test_client_exclude_fails_wrong_input(server, client):
         body=html,
         status=200,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(InvalidInput):
         assert client.exclude([9000])
 
 
-def test_client_exclude_fails_unknown_error(server, client):
+def test_client_exclude_fails_unknown_error(server):
     """Should fail if an unknown error happens."""
     server.add(
         responses.POST,
@@ -1002,15 +1044,16 @@ def test_client_exclude_fails_unknown_error(server, client):
         body="Server Error",
         status=500,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "unknown"
     client._lock.acquire()
-
+    # Test
     with pytest.raises(HTTPError):
         client.exclude([1])
     assert len(server.calls) == 1
 
 
-def test_client_get_descriptions(server, client):
+def test_client_get_descriptions(server):
     """Should retrieve inputs/sectors descriptions."""
     html = """
     [
@@ -1049,7 +1092,9 @@ def test_client_get_descriptions(server, client):
     ]
     """
     server.add(responses.POST, "https://example.com/api/strings", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
+    # Test
     descriptions = client._get_descriptions()
     # Expected output
     assert len(server.calls) == 1
@@ -1062,7 +1107,7 @@ def test_client_get_descriptions(server, client):
     assert descriptions[query.INPUTS][0] == "Alarm"
 
 
-def test_client_get_descriptions_cached(server, client):
+def test_client_get_descriptions_cached(server):
     """Should cache the result of get_descriptions()."""
     html = """
     [
@@ -1077,14 +1122,15 @@ def test_client_get_descriptions_cached(server, client):
     ]
     """
     server.add(responses.POST, "https://example.com/api/strings", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-    # Calling the function twice, should make one call
+    # Test
     client._get_descriptions()
     client._get_descriptions()
     assert len(server.calls) == 1
 
 
-def test_client_get_descriptions_unauthorized(server, client):
+def test_client_get_descriptions_unauthorized(server):
     """Should raise HTTPError if the request is unauthorized."""
     server.add(
         responses.POST,
@@ -1092,12 +1138,14 @@ def test_client_get_descriptions_unauthorized(server, client):
         body="User not authenticated",
         status=403,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
+    # Test
     with pytest.raises(HTTPError):
         client._get_descriptions()
 
 
-def test_client_get_descriptions_error(server, client):
+def test_client_get_descriptions_error(server):
     """Should raise HTTPError if there is a client error."""
     server.add(
         responses.POST,
@@ -1105,20 +1153,24 @@ def test_client_get_descriptions_error(server, client):
         body="Bad Request",
         status=400,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
+    # Test
     with pytest.raises(HTTPError):
         client._get_descriptions()
 
 
-def test_client_get_sectors_status(server, client, sectors_json, mocker):
+def test_client_get_sectors_status(server, sectors_json, mocker):
     """Should query a Elmo system to retrieve sectors status."""
     # query() depends on _get_descriptions()
     server.add(responses.POST, "https://example.com/api/areas", body=sectors_json, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
     client._get_descriptions.return_value = {
         9: {0: "Living Room", 1: "Bedroom", 2: "Kitchen", 3: "Entryway"},
     }
-    client._session_id = "test"
+    # Test
     sectors = client.query(query.SECTORS)
     # Expected output
     assert client._get_descriptions.called is True
@@ -1154,15 +1206,17 @@ def test_client_get_sectors_status(server, client, sectors_json, mocker):
     }
 
 
-def test_client_get_inputs_status(server, client, inputs_json, mocker):
+def test_client_get_inputs_status(server, inputs_json, mocker):
     """Should query a Elmo system to retrieve inputs status."""
     # query() depends on _get_descriptions()
     server.add(responses.POST, "https://example.com/api/inputs", body=inputs_json, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
     client._get_descriptions.return_value = {
         10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
     }
-    client._session_id = "test"
+    # Test
     inputs = client.query(query.INPUTS)
     # Expected output
     assert client._get_descriptions.called is True
@@ -1200,12 +1254,14 @@ def test_client_get_inputs_status(server, client, inputs_json, mocker):
 
 def test_client_query_not_valid(client):
     """Should raise QueryNotValid if the query is not recognized."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
+    # Test
     with pytest.raises(QueryNotValid):
         client.query("wrong_query")
 
 
-def test_client_query_unauthorized(server, client, mocker):
+def test_client_query_unauthorized(server, mocker):
     """Should raise HTTPError if the request is unauthorized."""
     server.add(
         responses.POST,
@@ -1213,13 +1269,15 @@ def test_client_query_unauthorized(server, client, mocker):
         body="User not authenticated",
         status=403,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
+    # Test
     with pytest.raises(HTTPError):
         client.query(query.SECTORS)
 
 
-def test_client_query_error(server, client, mocker):
+def test_client_query_error(server, mocker):
     """Should raise HTTPError if there is a client error."""
     server.add(
         responses.POST,
@@ -1227,7 +1285,9 @@ def test_client_query_error(server, client, mocker):
         body="Bad Request",
         status=400,
     )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     mocker.patch.object(client, "_get_descriptions")
+    # Test
     with pytest.raises(HTTPError):
         client.query(query.SECTORS)
