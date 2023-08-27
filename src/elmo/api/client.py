@@ -463,22 +463,38 @@ class ElmoClient:
 
             from elmo import query
 
-            sectors = client.query(query.SECTORS)
-            inputs = client.query(query.INPUTS)
+            sectors = client.query(query.SECTORS).get("sectors")
+            inputs = client.query(query.INPUTS).get("inputs")
 
         Raises:
             QueryNotValid: if the query is not recognized.
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A list of items containing the raw query. Every item is an entry
-            (sector or input) represented by a `dict` with the following structure:
+            A dict representing the raw query retrieved by the backend call. The structure is the following:
                 {
-                    "id": 1,
-                    "index": 0,
-                    "element": 3,
-                    "excluded": False,
-                    "name": "Kitchen",
+                    'last_id': 3,
+                    'sectors': {
+                        0: {
+                            'id': 1,
+                            'index': 0,
+                            'element': 1,
+                            'excluded': False,
+                            'status': True,
+                            'name': 'S1 Living Room'
+                        },
+                        1: {
+                            'id': 2,
+                            'index': 1,
+                            'element': 2,
+                            'excluded': False,
+                            'status': True,
+                            'name': 'S2 Bedroom'
+                        },
+                    },
                 }
+            `last_id`: is the last ID of the query, used to retrieve new state changes
+            `sectors`: is the key you use to retrieve sectors if that was the query
+            `inputs`: is the key you use to retrieve inputs if that was the query
         """
         # Query detection
         if query == q.SECTORS:
