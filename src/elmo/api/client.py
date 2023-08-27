@@ -98,6 +98,7 @@ class ElmoClient:
 
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
+            ParseError: if the response cannot be parsed because the format is unexpected.
         Returns:
             A dictionary that includes what items have been changed. The following
             structure means that `areas` are not changed, while inputs are:
@@ -469,6 +470,7 @@ class ElmoClient:
         Raises:
             QueryNotValid: if the query is not recognized.
             HTTPError: if there is an error raised by the API (not 2xx response).
+            ParseError: if the response cannot be parsed because the format is unexpected.
         Returns:
             A dict representing the raw query retrieved by the backend call. The structure is the following:
                 {
@@ -525,17 +527,20 @@ class ElmoClient:
             "last_id": entries[-1]["Id"],
             key_group: items,
         }
-        for entry in entries:
-            if entry["InUse"]:
-                item = {
-                    "id": entry.get("Id"),
-                    "index": entry.get("Index"),
-                    "element": entry.get("Element"),
-                    "excluded": entry.get("Excluded", False),
-                    "status": entry.get(status, False),
-                    "name": descriptions[query][entry.get("Index")],
-                }
+        try:
+            for entry in entries:
+                if entry["InUse"]:
+                    item = {
+                        "id": entry.get("Id"),
+                        "index": entry.get("Index"),
+                        "element": entry.get("Element"),
+                        "excluded": entry.get("Excluded", False),
+                        "status": entry.get(status, False),
+                        "name": descriptions[query][entry.get("Index")],
+                    }
 
-                items[entry.get("Index")] = item
+                    items[entry.get("Index")] = item
+        except KeyError as err:
+            raise ParseError(f"Client | Unable to parse query response: {err}") from err
 
         return result
