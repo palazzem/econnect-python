@@ -1,6 +1,6 @@
 import pytest
 
-from elmo.utils import _filter_data
+from elmo.utils import _filter_data, _sanitize_session_id
 
 
 def test_filter_data_empty_data():
@@ -66,3 +66,10 @@ def test_filter_data_key_error():
     status = True
     with pytest.raises(KeyError):
         _filter_data(data, key, status)
+
+
+def test_sanitize_identifier():
+    """Ensure session ID are obfuscated for debug purposes."""
+    assert _sanitize_session_id("0fb182e9-474c-ca1c-f60c-ed203dbb26aa") == "0fb182e9-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+    assert _sanitize_session_id("abcdefgh-ijkl-mnop-qrst-uvwxyz012345") == "abcdefgh-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+    assert _sanitize_session_id("12345678-90ab-cdef-ghij-klmnopqrstuv") == "12345678-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
