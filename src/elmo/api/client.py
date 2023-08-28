@@ -1,3 +1,4 @@
+import logging
 from contextlib import contextmanager
 from functools import lru_cache
 from threading import Lock
@@ -6,6 +7,7 @@ from requests import Session
 from requests.exceptions import HTTPError
 
 from .. import query as q
+from ..utils import _sanitize_session_id
 from .decorators import require_lock, require_session
 from .exceptions import (
     CodeError,
@@ -17,6 +19,8 @@ from .exceptions import (
     QueryNotValid,
 )
 from .router import Router
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class ElmoClient:
@@ -41,6 +45,9 @@ class ElmoClient:
         self._session = Session()
         self._session_id = session_id
         self._lock = Lock()
+        # Debug
+        _LOGGER.debug(f"Client | Router: {self._router._base_url}")
+        _LOGGER.debug(f"Client | Domain: {self._domain}")
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses
@@ -61,6 +68,7 @@ class ElmoClient:
             if self._domain is not None:
                 payload["domain"] = self._domain
 
+            _LOGGER.debug("Client | Client Authentication")
             response = self._session.get(self._router.auth, params=payload)
             response.raise_for_status()
         except HTTPError as err:
@@ -75,12 +83,14 @@ class ElmoClient:
 
         # Register the redirect URL and try the authentication again
         if data["Redirect"]:
+            _LOGGER.debug(f"Redirect URL detected: {data['RedirectTo']}")
             self._router._base_url = data["RedirectTo"]
             redirect = self._session.get(self._router.auth, params=payload)
             redirect.raise_for_status()
             data = redirect.json()
             self._session_id = data["SessionId"]
 
+        _LOGGER.debug(f"Client | Authentication successful: {_sanitize_session_id(self._session_id)}")
         return self._session_id
 
     @require_session
@@ -128,6 +138,8 @@ class ElmoClient:
             }
         except KeyError as err:
             raise ParseError(f"Client | Unable to parse poll response: {err} is missing") from err
+
+        _LOGGER.debug(f"Client | Polling result: {update}")
         return update
 
     @contextmanager
@@ -166,6 +178,7 @@ class ElmoClient:
             raise CodeError
 
         self._lock.acquire()
+        _LOGGER.debug(f"Client | Lock acquired with response {body}")
         try:
             yield self
         finally:
@@ -191,6 +204,7 @@ class ElmoClient:
         response = self._session.post(self._router.unlock, data=payload)
         response.raise_for_status()
 
+        _LOGGER.debug(f"Client | Lock released with response {response.text}")
         # Release the lock only in case of success, so that if it fails
         # the owner of the lock can properly unlock the system again
         # (maybe with a retry)
@@ -221,6 +235,7 @@ class ElmoClient:
 
         if sectors:
             # Arm only selected sectors
+            _LOGGER.debug(f"Client | Arming sectors: {sectors}")
             for sector in sectors:
                 payloads.append(
                     {
@@ -232,6 +247,7 @@ class ElmoClient:
                 )
         else:
             # Arm ALL sectors
+            _LOGGER.debug("Client | Arming all sectors")
             payloads = [
                 {
                     "CommandType": 1,
@@ -249,6 +265,7 @@ class ElmoClient:
 
             # A not existing sector returns 200 with a fail state
             body = response.json()
+            _LOGGER.debug(f"Client | Arming response: {body}")
             if not body[0]["Successful"]:
                 errors.append(payload["ElementsIndexes"])
 
@@ -257,6 +274,7 @@ class ElmoClient:
             invalid_sectors = ",".join(str(x) for x in errors)
             raise InvalidSector("Selected sectors don't exist: {}".format(invalid_sectors))
 
+        _LOGGER.debug("Client | Arming successful")
         return True
 
     @require_session
@@ -283,6 +301,7 @@ class ElmoClient:
 
         if sectors:
             # Disarm only selected sectors
+            _LOGGER.debug(f"Client | Disarming sectors: {sectors}")
             for sector in sectors:
                 payloads.append(
                     {
@@ -294,6 +313,7 @@ class ElmoClient:
                 )
         else:
             # Disarm ALL sectors
+            _LOGGER.debug("Client | Disarming all sectors")
             payloads = [
                 {
                     "CommandType": 2,
@@ -311,6 +331,7 @@ class ElmoClient:
 
             # A not existing sector returns 200 with a fail state
             body = response.json()
+            _LOGGER.debug(f"Client | Disarming response: {body}")
             if not body[0]["Successful"]:
                 errors.append(payload["ElementsIndexes"])
 
@@ -319,6 +340,7 @@ class ElmoClient:
             invalid_sectors = ",".join(str(x) for x in errors)
             raise InvalidSector("Selected sectors don't exist: {}".format(invalid_sectors))
 
+        _LOGGER.debug("Client | Disarming successful")
         return True
 
     @require_session
@@ -348,6 +370,7 @@ class ElmoClient:
         payloads = []
 
         # Exclude only selected inputs
+        _LOGGER.debug(f"Client | Excluding inputs: {inputs}")
         for element in inputs:
             payloads.append(
                 {
@@ -366,6 +389,7 @@ class ElmoClient:
 
             # A not existing input returns 200 with a fail state
             body = response.json()
+            _LOGGER.debug(f"Client | Excluding response: {body}")
             if not body[0]["Successful"]:
                 errors.append(payload["ElementsIndexes"])
 
@@ -374,6 +398,7 @@ class ElmoClient:
             invalid_inputs = ",".join(str(x) for x in errors)
             raise InvalidInput("Selected inputs don't exist: {}".format(invalid_inputs))
 
+        _LOGGER.debug("Client | Excluding successful")
         return True
 
     @require_session
@@ -403,6 +428,7 @@ class ElmoClient:
         payloads = []
 
         # Include only selected inputs
+        _LOGGER.debug(f"Client | Including inputs: {inputs}")
         for element in inputs:
             payloads.append(
                 {
@@ -421,6 +447,7 @@ class ElmoClient:
 
             # A not existing input returns 200 with a fail state
             body = response.json()
+            _LOGGER.debug(f"Client | Including response: {body}")
             if not body[0]["Successful"]:
                 errors.append(payload["ElementsIndexes"])
 
@@ -429,6 +456,7 @@ class ElmoClient:
             invalid_inputs = ",".join(str(x) for x in errors)
             raise InvalidInput("Selected inputs don't exist: {}".format(invalid_inputs))
 
+        _LOGGER.debug("Client | Including successful")
         return True
 
     @lru_cache(maxsize=1)
@@ -450,11 +478,14 @@ class ElmoClient:
 
         # Transform the list of items in a dict -> dict of strings
         descriptions = {}
-        for item in response.json():
+        items = response.json()
+        _LOGGER.debug(f"Client | Descriptions response: {items}")
+        for item in items:
             classes = descriptions.get(item["Class"], {})
             classes[item["Index"]] = item["Description"]
             descriptions[item["Class"]] = classes
 
+        _LOGGER.debug(f"Client | Descriptions retrieved (in-cache): {descriptions}")
         return descriptions
 
     @require_session
@@ -503,10 +534,12 @@ class ElmoClient:
             status = "Active"
             key_group = "sectors"
             endpoint = self._router.sectors
+            _LOGGER.debug("Client | Querying sectors")
         elif query == q.INPUTS:
             status = "Alarm"
             key_group = "inputs"
             endpoint = self._router.inputs
+            _LOGGER.debug("Client | Querying inputs")
         else:
             # Bail-out if the query is not recognized
             raise QueryNotValid()
@@ -522,6 +555,7 @@ class ElmoClient:
         # structure, we default "excluded" as False for sectors. In fact, sectors
         # are never excluded.
         entries = response.json()
+        _LOGGER.debug(f"Client | Query response: {entries}")
         items = {}
         result = {
             "last_id": entries[-1]["Id"],
@@ -543,4 +577,5 @@ class ElmoClient:
         except KeyError as err:
             raise ParseError(f"Client | Unable to parse query response: {err}") from err
 
+        _LOGGER.debug(f"Client | Query parsed successfully: {result}")
         return result
