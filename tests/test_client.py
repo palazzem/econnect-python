@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 import responses
 from requests.exceptions import HTTPError
@@ -74,6 +76,33 @@ def test_client_auth_success(server):
     assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
     assert client._session_id == "00000000-0000-0000-0000-000000000000"
     assert len(server.calls) == 1
+
+
+def test_client_debug_with_session_sanitized(server, caplog):
+    """Ensure that the session ID is sanitized in debug mode."""
+    html = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Username": "test",
+            "Domain": "domain",
+            "Language": "en",
+            "IsActivated": true,
+            "IsConnected": true,
+            "IsLoggedIn": false,
+            "IsLoginInProgress": false,
+            "CanElevate": true,
+            "AccountId": 100,
+            "IsManaged": false,
+            "Redirect": false,
+            "IsElevation": false
+        }
+    """
+    server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    caplog.set_level(logging.DEBUG)
+    # Test
+    assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
+    assert "Authentication successful: 00000000-XXXX-XXXX-XXXX-XXXXXXXXXXXX" in caplog.text
 
 
 def test_client_auth_forbidden(server):

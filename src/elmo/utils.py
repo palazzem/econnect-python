@@ -31,3 +31,19 @@ def _filter_data(data, key, status):
         _LOGGER.error(f"Utils | Error filtering {key} query: {err}")
         raise err
     return filtered_data
+
+
+def _sanitize_session_id(session_id):
+    """Obfuscates a session ID, preserving the first 8 characters and dashes.
+
+    This function retains the first 8 characters of the given session ID, and replaces
+    the subsequent characters with 'X', except for dashes, which are preserved.
+
+    Args:
+        session_id (str): The session ID to be sanitized.
+
+    Returns:
+        str: The sanitized session ID.
+    """
+    sanitized = session_id[:8] + "".join("-" if char == "-" else "X" for char in session_id[8:])
+    return sanitized
