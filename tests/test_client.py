@@ -1421,6 +1421,130 @@ def test_client_get_inputs_status(server, mocker):
     }
 
 
+def test_client_get_sectors_missing_area(server, mocker):
+    """Should set an Unknown `sector` name if the description is missing.
+    Regression test for: https://github.com/palazzem/econnect-python/issues/91"""
+    html = """[
+       {
+           "Active": true,
+           "ActivePartial": false,
+           "Max": false,
+           "Activable": true,
+           "ActivablePartial": false,
+           "InUse": true,
+           "Id": 1,
+           "Index": 0,
+           "Element": 1,
+           "CommandId": 0,
+           "InProgress": false
+       },
+       {
+           "Active": true,
+           "ActivePartial": false,
+           "Max": false,
+           "Activable": true,
+           "ActivablePartial": false,
+           "InUse": true,
+           "Id": 2,
+           "Index": 1,
+           "Element": 2,
+           "CommandId": 0,
+           "InProgress": false
+       }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/areas", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {
+        9: {0: "Living Room"},
+    }
+    # Test
+    sectors = client.query(query.SECTORS)
+    assert sectors == {
+        "last_id": 2,
+        "sectors": {
+            0: {
+                "element": 1,
+                "id": 1,
+                "index": 0,
+                "status": True,
+                "excluded": False,
+                "name": "Living Room",
+            },
+            1: {
+                "element": 2,
+                "id": 2,
+                "index": 1,
+                "status": True,
+                "excluded": False,
+                "name": "Unknown",
+            },
+        },
+    }
+
+
+def test_client_get_inputs_missing_area(server, mocker):
+    """Should set an Unknown `input` name if the description is missing.
+    Regression test for: https://github.com/palazzem/econnect-python/issues/91"""
+    html = """[
+       {
+           "Alarm": true,
+           "MemoryAlarm": false,
+           "Excluded": false,
+           "InUse": true,
+           "IsVideo": false,
+           "Id": 1,
+           "Index": 0,
+           "Element": 1,
+           "CommandId": 0,
+           "InProgress": false
+       },
+       {
+           "Alarm": true,
+           "MemoryAlarm": false,
+           "Excluded": false,
+           "InUse": true,
+           "IsVideo": false,
+           "Id": 2,
+           "Index": 1,
+           "Element": 2,
+           "CommandId": 0,
+           "InProgress": false
+       }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/inputs", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {
+        10: {0: "Alarm"},
+    }
+    # Test
+    inputs = client.query(query.INPUTS)
+    assert inputs == {
+        "last_id": 2,
+        "inputs": {
+            0: {
+                "element": 1,
+                "id": 1,
+                "index": 0,
+                "status": True,
+                "excluded": False,
+                "name": "Alarm",
+            },
+            1: {
+                "element": 2,
+                "id": 2,
+                "index": 1,
+                "status": True,
+                "excluded": False,
+                "name": "Unknown",
+            },
+        },
+    }
+
+
 def test_client_query_not_valid(client):
     """Should raise QueryNotValid if the query is not recognized."""
     client = ElmoClient(base_url="https://example.com", domain="domain")

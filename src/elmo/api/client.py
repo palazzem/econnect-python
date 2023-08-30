@@ -564,13 +564,19 @@ class ElmoClient:
         try:
             for entry in entries:
                 if entry["InUse"]:
+                    # Address potential data inconsistency between cloud data and main unit.
+                    # In some installations, they may be out of sync, resulting in the cloud
+                    # providing a sector/input that doesn't actually exist in the main unit.
+                    # To handle this, we default the name to "Unknown" if its description
+                    # isn't found in the cloud data to prevent KeyError.
+                    name = descriptions[query].get(entry["Index"], "Unknown")
                     item = {
                         "id": entry.get("Id"),
                         "index": entry.get("Index"),
                         "element": entry.get("Element"),
                         "excluded": entry.get("Excluded", False),
                         "status": entry.get(status, False),
-                        "name": descriptions[query][entry.get("Index")],
+                        "name": name,
                     }
 
                     items[entry.get("Index")] = item
