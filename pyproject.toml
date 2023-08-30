@@ -54,6 +54,9 @@ Documentation = "https://github.com/palazzem/econnect-python#readme"
 Issues = "https://github.com/palazzem/econnect-python/issues"
 Source = "https://github.com/palazzem/econnect-python"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/elmo"]
+
 [tool.hatch.version]
 path = "src/elmo/__about__.py"
 
