@@ -1,5 +1,8 @@
 # E-connect Python API
 
+[![Testing](https://github.com/palazzem/econnect-python/actions/workflows/testing.yaml/badge.svg)](https://github.com/palazzem/econnect-python/actions/workflows/testing.yaml)
+[![Linting](https://github.com/palazzem/econnect-python/actions/workflows/linting.yaml/badge.svg)](https://github.com/palazzem/econnect-python/actions/workflows/linting.yaml)
+[![Building](https://github.com/palazzem/econnect-python/actions/workflows/building.yaml/badge.svg)](https://github.com/palazzem/econnect-python/actions/workflows/building.yaml)
 [![PyPI version](https://badge.fury.io/py/econnect-python.svg)](https://badge.fury.io/py/econnect-python)
 
 `econnect-python` is an API adapter used to control programmatically an Elmo alarm system.
