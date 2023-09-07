@@ -17,12 +17,29 @@ from elmo.api.exceptions import (
     ParseError,
     QueryNotValid,
 )
+from elmo.systems import ELMO_E_CONNECT, IESS_METRONET
 
 
 def test_client_constructor_default():
     """Should build the client using the default values."""
     client = ElmoClient()
     assert client._router._base_url == "https://connect.elmospa.com"
+    assert client._domain is None
+    assert client._session_id is None
+
+
+def test_client_econnect_system():
+    """Should build the client using Elmo e-Connect URL."""
+    client = ElmoClient(ELMO_E_CONNECT)
+    assert client._router._base_url == "https://connect.elmospa.com"
+    assert client._domain is None
+    assert client._session_id is None
+
+
+def test_client_metronet_system():
+    """Should build the client using IESS Metronet URL."""
+    client = ElmoClient(IESS_METRONET)
+    assert client._router._base_url == "https://metronet.iessonline.com"
     assert client._domain is None
     assert client._session_id is None
 
