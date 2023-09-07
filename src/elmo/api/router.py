@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 
+from ..systems import ELMO_E_CONNECT
 from .exceptions import ValidationError
 
 
@@ -10,7 +11,8 @@ class Router:
 
     def __init__(self, base_url):
         # Enforce the value is a valid URL behind HTTPS
-        base_url = base_url or "https://connect.elmospa.com"
+        # Elmo e-Connect service must kept as default
+        base_url = base_url or ELMO_E_CONNECT
         url = urlparse(base_url)
         if url.scheme != "https":
             raise ValidationError("The schema must be HTTPS")

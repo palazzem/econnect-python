@@ -6,7 +6,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/palazzem/econnect-python/badge.svg?branch=main)](https://coveralls.io/github/palazzem/econnect-python?branch=main)
 [![PyPI version](https://badge.fury.io/py/econnect-python.svg)](https://badge.fury.io/py/econnect-python)
 
-`econnect-python` is an API adapter used to control programmatically an Elmo alarm system.
+`econnect-python` is an API adapter used to control programmatically an Elmo-like alarm system.
 Through a generic configuration, the client allows:
 
 * Retrieving access tokens to make API calls
@@ -18,6 +18,12 @@ Through a generic configuration, the client allows:
 
 * Python 3.8+
 * `requests`
+
+## Supported Systems
+
+This package targets Elmo-like alarm systems. The following systems are known to work:
+- [Elmo e-Connect](https://e-connect.elmospa.com/)
+- [IESS Metronet](https://www.iessonline.com/)
 
 ## Getting Started
 
@@ -46,8 +52,8 @@ with client.lock("secret-code") as c:
     c.disarm(sectors=[3])  # Disarm only sector 3
 
 # Query the system
-sectors_armed, sectors_disarmed = client.query(query.SECTORS)
-inputs_alerted, inputs_wait = client.query(query.INPUTS)
+sectors = client.query(query.SECTORS)
+inputs = client.query(query.INPUTS)
 ```
 
 The access token is valid for 10 minutes, after which, you need to authenticate again to
@@ -59,22 +65,48 @@ Once the lock is obtained, other clients cannot connect to the alarm system and 
 manual override on the terminal is allowed. Outside the context manager, the lock is
 automatically released.
 
-### Client Configuration
+### Connecting to Systems
 
-If `https://connect.elmospa.com` is your authentication page, no configuration is needed
-and you can skip this section.
+By default, the `ElmoClient` constructor will automatically connect to the Elmo e-Connect
+system. However, if you need to connect to a different system, the `systems` module provides
+a list of available alarm systems for you to choose from.
+
+Here's how you can use it:
+
+```python
+from elmo.api.client import ElmoClient
+from elmo.systems import ELMO_E_CONNECT, IESS_METRONET
+
+# Connect to the default Elmo e-Connect system
+client = ElmoClient()
+
+# Explicitly connect to the Elmo e-Connect system
+client = ElmoClient(base_url=ELMO_E_CONNECT)
+
+# Connect to the IESS Metronet system
+client = ElmoClient(base_url=IESS_METRONET)
+```
+
+Note: The default constructor (with no parameters) remains unchanged to ensure backward compatibility and performs identically to the explicit call with `ELMO_E_CONNECT`.
+
+### Custom URLs
+
+If `https://connect.elmospa.com` or `https://metronet.iessonline.com` are your authentication pages, no configuration
+is needed and you can skip this section.
 
 On the other hand, if your authentication page is something similar to
 `https://connect3.elmospa.com/nwd`, you must configure your client as follows:
 
 ```python
+from elmo.api.client import ElmoClient
+
 # Override the default URL and domain
 client = ElmoClient(base_url="https://connect3.elmospa.com", domain="nwd")
 client.auth("username", "password")
 ```
 
 If your `base_url` or `domain` are not properly set, your credentials will not work
-and you will get a `403 Client Error` as your username and password are wrong.
+and you will get a `403 Client Error` as your username and password are not correct.
 
 ## Contributing
 
