@@ -32,6 +32,10 @@ class Router:
         return "{}/api/updates".format(self._base_url)
 
     @property
+    def status(self):
+        return "{}/api/statusadv".format(self._base_url)
+
+    @property
     def lock(self):
         return "{}/api/panel/syncLogin".format(self._base_url)
 
