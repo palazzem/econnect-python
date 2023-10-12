@@ -1438,7 +1438,7 @@ def test_client_get_inputs_status(server, mocker):
     }
 
 
-def test_client_get_alerts_status(server, mocker):
+def test_client_get_alerts_status(server):
     """Should query a Elmo system to retrieve alerts status."""
     html = """
         {
@@ -1481,14 +1481,9 @@ def test_client_get_alerts_status(server, mocker):
         }
     """
 
-    # query() depends on _get_descriptions()
     server.add(responses.POST, "https://example.com/api/statusadv", body=html, status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-    mocker.patch.object(client, "_get_descriptions")
-    client._get_descriptions.return_value = {
-        10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
-    }
     # Test
     alerts = client.query(query.ALERTS)
     # Expected output
@@ -1697,22 +1692,18 @@ def test_client_get_alerts_http_error(server):
     assert len(server.calls) == 1
 
 
-def test_client_get_alerts_invalid_json(server, mocker):
+def test_client_get_alerts_invalid_json(server):
     """Should raise ParseError if the response is unexpected."""
     server.add(responses.POST, "https://example.com/api/statusadv", body="Invalid JSON", status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-    mocker.patch.object(client, "_get_descriptions")
-    client._get_descriptions.return_value = {
-        10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
-    }
     # Test
     with pytest.raises(ParseError):
         client.query(query.ALERTS)
     assert len(server.calls) == 1
 
 
-def test_client_get_alerts_missing_data(server, mocker):
+def test_client_get_alerts_missing_data(server):
     """Should raise ParseError if some response data is missing."""
     html = """
         {
@@ -1734,10 +1725,6 @@ def test_client_get_alerts_missing_data(server, mocker):
     server.add(responses.POST, "https://example.com/api/statusadv", body=html, status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
-    mocker.patch.object(client, "_get_descriptions")
-    client._get_descriptions.return_value = {
-        10: {0: "Alarm", 1: "Window kitchen", 2: "Door entryway", 3: "Window bathroom"},
-    }
     # Test
     with pytest.raises(ParseError):
         client.query(query.ALERTS)

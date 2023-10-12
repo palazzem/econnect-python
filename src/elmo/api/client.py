@@ -550,15 +550,14 @@ class ElmoClient:
         response = self._session.post(endpoint, data={"sessionId": self._session_id})
         response.raise_for_status()
 
-        # Retrieve description or use the cache
-        descriptions = self._get_descriptions()
-
-        # Filter only entries that are used
-        # `excluded` field is available only on inputs, but to return the same `dict`
-        # structure, we default "excluded" as False for sectors. In fact, sectors
-        # are never excluded.
-
         if query in [q.SECTORS, q.INPUTS]:
+            # Retrieve description or use the cache
+            descriptions = self._get_descriptions()
+
+            # Filter only entries that are used
+            # `excluded` field is available only on inputs, but to return the same `dict`
+            # structure, we default "excluded" as False for sectors. In fact, sectors
+            # are never excluded.
             entries = response.json()
             _LOGGER.debug(f"Client | Query response: {entries}")
             items = {}
