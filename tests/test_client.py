@@ -1438,84 +1438,6 @@ def test_client_get_inputs_status(server, mocker):
     }
 
 
-def test_client_get_alerts_status(server):
-    """Should query a Elmo system to retrieve alerts status."""
-    html = """
-        {
-            "StatusUid": 1,
-            "PanelLeds": {
-                "InputsLed": 2,
-                "AnomaliesLed": 1,
-                "AlarmLed": 0,
-                "TamperLed": 0
-            },
-            "PanelAnomalies": {
-                "HasAnomaly": false,
-                "PanelTamper": 0,
-                "PanelNoPower": 0,
-                "PanelLowBattery": 0,
-                "GsmAnomaly": 0,
-                "GsmLowBalance": 0,
-                "PstnAnomaly": 0,
-                "SystemTest": 0,
-                "ModuleRegistration": 0,
-                "RfInterference": 0,
-                "InputFailure": 0,
-                "InputAlarm": 0,
-                "InputBypass": 0,
-                "InputLowBattery": 0,
-                "InputNoSupervision": 0,
-                "DeviceTamper": 0,
-                "DeviceFailure": 0,
-                "DeviceNoPower": 0,
-                "DeviceLowBattery": 0,
-                "DeviceNoSupervision": 0,
-                "DeviceSystemBlock": 0
-            },
-            "PanelAlignmentAdv": {
-                "ManualFwUpAvailable": false,
-                "Id": 1,
-                "Index": -1,
-                "Element": 0
-            }
-        }
-    """
-
-    server.add(responses.POST, "https://example.com/api/statusadv", body=html, status=200)
-    client = ElmoClient(base_url="https://example.com", domain="domain")
-    client._session_id = "test"
-    # Test
-    alerts = client.query(query.ALERTS)
-    # Expected output
-    assert alerts == {
-        "inputs_led": 2,
-        "anomalies_led": 1,
-        "alarm_led": 0,
-        "tamper_led": 0,
-        "has_anomaly": False,
-        "panel_tamper": 0,
-        "panel_no_power": 0,
-        "panel_low_battery": 0,
-        "gsm_anomaly": 0,
-        "gsm_low_balance": 0,
-        "pstn_anomaly": 0,
-        "system_test": 0,
-        "module_registration": 0,
-        "rf_interference": 0,
-        "input_failure": 0,
-        "input_alarm": 0,
-        "input_bypass": 0,
-        "input_low_battery": 0,
-        "input_no_supervision": 0,
-        "device_tamper": 0,
-        "device_failure": 0,
-        "device_no_power": 0,
-        "device_low_battery": 0,
-        "device_no_supervision": 0,
-        "device_system_block": 0,
-    }
-
-
 def test_client_get_sectors_missing_area(server, mocker):
     """Should set an Unknown `sector` name if the description is missing.
     Regression test for: https://github.com/palazzem/econnect-python/issues/91"""
@@ -1679,6 +1601,84 @@ def test_client_query_error(server, mocker):
     # Test
     with pytest.raises(HTTPError):
         client.query(query.SECTORS)
+
+
+def test_client_get_alerts_status(server):
+    """Should query a Elmo system to retrieve alerts status."""
+    html = """
+        {
+            "StatusUid": 1,
+            "PanelLeds": {
+                "InputsLed": 2,
+                "AnomaliesLed": 1,
+                "AlarmLed": 0,
+                "TamperLed": 0
+            },
+            "PanelAnomalies": {
+                "HasAnomaly": false,
+                "PanelTamper": 0,
+                "PanelNoPower": 0,
+                "PanelLowBattery": 0,
+                "GsmAnomaly": 0,
+                "GsmLowBalance": 0,
+                "PstnAnomaly": 0,
+                "SystemTest": 0,
+                "ModuleRegistration": 0,
+                "RfInterference": 0,
+                "InputFailure": 0,
+                "InputAlarm": 0,
+                "InputBypass": 0,
+                "InputLowBattery": 0,
+                "InputNoSupervision": 0,
+                "DeviceTamper": 0,
+                "DeviceFailure": 0,
+                "DeviceNoPower": 0,
+                "DeviceLowBattery": 0,
+                "DeviceNoSupervision": 0,
+                "DeviceSystemBlock": 0
+            },
+            "PanelAlignmentAdv": {
+                "ManualFwUpAvailable": false,
+                "Id": 1,
+                "Index": -1,
+                "Element": 0
+            }
+        }
+    """
+
+    server.add(responses.POST, "https://example.com/api/statusadv", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    # Test
+    alerts = client.query(query.ALERTS)
+    # Expected output
+    assert alerts == {
+        "inputs_led": 2,
+        "anomalies_led": 1,
+        "alarm_led": 0,
+        "tamper_led": 0,
+        "has_anomaly": False,
+        "panel_tamper": 0,
+        "panel_no_power": 0,
+        "panel_low_battery": 0,
+        "gsm_anomaly": 0,
+        "gsm_low_balance": 0,
+        "pstn_anomaly": 0,
+        "system_test": 0,
+        "module_registration": 0,
+        "rf_interference": 0,
+        "input_failure": 0,
+        "input_alarm": 0,
+        "input_bypass": 0,
+        "input_low_battery": 0,
+        "input_no_supervision": 0,
+        "device_tamper": 0,
+        "device_failure": 0,
+        "device_no_power": 0,
+        "device_low_battery": 0,
+        "device_no_supervision": 0,
+        "device_system_block": 0,
+    }
 
 
 def test_client_get_alerts_http_error(server):
