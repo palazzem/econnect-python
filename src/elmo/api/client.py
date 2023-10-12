@@ -489,46 +489,6 @@ class ElmoClient:
         return descriptions
 
     @require_session
-    def get_status(self):
-        """Retrieve the status and convert its keys to snake_case format.
-
-        This method sends a POST request to retrieve the status and then converts
-        the keys of the 'PanelAnomalies' section of the response to snake_case format
-        for easier usage in other modules.
-
-        Args:
-            None
-
-        Returns:
-            dict: A dictionary containing the status with keys in snake_case format.
-
-        Raises:
-            requests.HTTPError: If the POST request returns a bad response.
-            ParseError: If the response doesn't have the expected format or missing 'PanelAnomalies'.
-        """
-        payload = {"sessionId": self._session_id}
-        response = self._session.post(self._router.status, data=payload)
-        _LOGGER.debug(f"Client | Status response: {response}")
-        response.raise_for_status()
-
-        try:
-            # Check if the response has the expected format
-            msg = response.json()
-            status = msg["PanelLeds"]
-            anomalies = msg["PanelAnomalies"]
-        except (KeyError, ValueError):
-            raise ParseError("Unexpected response format from the server.")
-
-        # Merge the 'status' and 'anomalies' dictionaries
-        merged_dict = {**status, **anomalies}
-
-        # Convert the dict to a snake_case one to simplify the usage in other modules
-        snake_case_dict = {_camel_to_snake_case(k): v for k, v in merged_dict.items()}
-        _LOGGER.debug(f"Client | Status retrieved: {snake_case_dict}")
-
-        return snake_case_dict
-
-    @require_session
     def query(self, query):
         """Query an Elmo System to retrieve registered entries. It's possible to query
         different part of the system using the `elmo.query` module:
@@ -580,6 +540,9 @@ class ElmoClient:
             key_group = "inputs"
             endpoint = self._router.inputs
             _LOGGER.debug("Client | Querying inputs")
+        elif query == q.ALERTS:
+            endpoint = self._router.status
+            _LOGGER.debug("Client | Querying alerts")
         else:
             # Bail-out if the query is not recognized
             raise QueryNotValid()
@@ -587,41 +550,60 @@ class ElmoClient:
         response = self._session.post(endpoint, data={"sessionId": self._session_id})
         response.raise_for_status()
 
-        # Retrieve description or use the cache
-        descriptions = self._get_descriptions()
+        if query in [q.SECTORS, q.INPUTS]:
+            # Retrieve description or use the cache
+            descriptions = self._get_descriptions()
 
-        # Filter only entries that are used
-        # `excluded` field is available only on inputs, but to return the same `dict`
-        # structure, we default "excluded" as False for sectors. In fact, sectors
-        # are never excluded.
-        entries = response.json()
-        _LOGGER.debug(f"Client | Query response: {entries}")
-        items = {}
-        result = {
-            "last_id": entries[-1]["Id"],
-            key_group: items,
-        }
-        try:
-            for entry in entries:
-                if entry["InUse"]:
-                    # Address potential data inconsistency between cloud data and main unit.
-                    # In some installations, they may be out of sync, resulting in the cloud
-                    # providing a sector/input that doesn't actually exist in the main unit.
-                    # To handle this, we default the name to "Unknown" if its description
-                    # isn't found in the cloud data to prevent KeyError.
-                    name = descriptions[query].get(entry["Index"], "Unknown")
-                    item = {
-                        "id": entry.get("Id"),
-                        "index": entry.get("Index"),
-                        "element": entry.get("Element"),
-                        "excluded": entry.get("Excluded", False),
-                        "status": entry.get(status, False),
-                        "name": name,
-                    }
+            # Filter only entries that are used
+            # `excluded` field is available only on inputs, but to return the same `dict`
+            # structure, we default "excluded" as False for sectors. In fact, sectors
+            # are never excluded.
+            entries = response.json()
+            _LOGGER.debug(f"Client | Query response: {entries}")
+            items = {}
+            result = {
+                "last_id": entries[-1]["Id"],
+                key_group: items,
+            }
+            try:
+                for entry in entries:
+                    if entry["InUse"]:
+                        # Address potential data inconsistency between cloud data and main unit.
+                        # In some installations, they may be out of sync, resulting in the cloud
+                        # providing a sector/input that doesn't actually exist in the main unit.
+                        # To handle this, we default the name to "Unknown" if its description
+                        # isn't found in the cloud data to prevent KeyError.
+                        name = descriptions[query].get(entry["Index"], "Unknown")
+                        item = {
+                            "id": entry.get("Id"),
+                            "index": entry.get("Index"),
+                            "element": entry.get("Element"),
+                            "excluded": entry.get("Excluded", False),
+                            "status": entry.get(status, False),
+                            "name": name,
+                        }
 
-                    items[entry.get("Index")] = item
-        except KeyError as err:
-            raise ParseError(f"Client | Unable to parse query response: {err}") from err
+                        items[entry.get("Index")] = item
+            except KeyError as err:
+                raise ParseError(f"Client | Unable to parse query response: {err}") from err
 
-        _LOGGER.debug(f"Client | Query parsed successfully: {result}")
-        return result
+            _LOGGER.debug(f"Client | Query parsed successfully: {result}")
+            return result
+
+        if query == q.ALERTS:
+            try:
+                # Check if the response has the expected format
+                msg = response.json()
+                status = msg["PanelLeds"]
+                anomalies = msg["PanelAnomalies"]
+            except (KeyError, ValueError):
+                raise ParseError("Unexpected response format from the server.")
+
+            # Merge the 'status' and 'anomalies' dictionaries
+            merged_dict = {**status, **anomalies}
+
+            # Convert the dict to a snake_case one to simplify the usage in other modules
+            snake_case_dict = {_camel_to_snake_case(k): v for k, v in merged_dict.items()}
+            _LOGGER.debug(f"Client | Status retrieved: {snake_case_dict}")
+
+            return snake_case_dict

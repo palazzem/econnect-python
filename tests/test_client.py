@@ -1603,8 +1603,8 @@ def test_client_query_error(server, mocker):
         client.query(query.SECTORS)
 
 
-def test_client_get_status(server):
-    """Should raise HTTPError if there is a client error."""
+def test_client_get_alerts_status(server):
+    """Should query a Elmo system to retrieve alerts status."""
     html = """
         {
             "StatusUid": 1,
@@ -1645,14 +1645,16 @@ def test_client_get_status(server):
             }
         }
     """
+
     server.add(responses.POST, "https://example.com/api/statusadv", body=html, status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     # Test
-    result = client.get_status()
+    alerts = client.query(query.ALERTS)
     body = server.calls[0].request.body
     assert body == "sessionId=test"
-    assert result == {
+    # Expected output
+    assert alerts == {
         "inputs_led": 2,
         "anomalies_led": 1,
         "alarm_led": 0,
@@ -1681,29 +1683,29 @@ def test_client_get_status(server):
     }
 
 
-def test_client_get_status_http_error(server):
+def test_client_get_alerts_http_error(server):
     """Should raise HTTPError if there is a client error."""
     server.add(responses.POST, "https://example.com/api/statusadv", body="500 Error", status=500)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     # Test
     with pytest.raises(HTTPError):
-        client.get_status()
+        client.query(query.ALERTS)
     assert len(server.calls) == 1
 
 
-def test_client_get_status_invalid_json(server):
+def test_client_get_alerts_invalid_json(server):
     """Should raise ParseError if the response is unexpected."""
     server.add(responses.POST, "https://example.com/api/statusadv", body="Invalid JSON", status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     client._session_id = "test"
     # Test
     with pytest.raises(ParseError):
-        client.get_status()
+        client.query(query.ALERTS)
     assert len(server.calls) == 1
 
 
-def test_client_get_status_missing_data(server):
+def test_client_get_alerts_missing_data(server):
     """Should raise ParseError if some response data is missing."""
     html = """
         {
@@ -1727,5 +1729,5 @@ def test_client_get_status_missing_data(server):
     client._session_id = "test"
     # Test
     with pytest.raises(ParseError):
-        client.get_status()
+        client.query(query.ALERTS)
     assert len(server.calls) == 1
