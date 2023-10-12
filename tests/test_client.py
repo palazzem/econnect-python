@@ -1651,6 +1651,8 @@ def test_client_get_alerts_status(server):
     client._session_id = "test"
     # Test
     alerts = client.query(query.ALERTS)
+    body = server.calls[0].request.body
+    assert body == "sessionId=test"
     # Expected output
     assert alerts == {
         "inputs_led": 2,
