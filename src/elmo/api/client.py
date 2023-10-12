@@ -489,48 +489,6 @@ class ElmoClient:
         return descriptions
 
     @require_session
-    def get_status(self):
-        # This definition is mantained to allow backward compatibility
-        # and will be removed in the next major release
-        """Retrieve the status and convert its keys to snake_case format.
-
-        This method sends a POST request to retrieve the status and then converts
-        the keys of the 'PanelAnomalies' section of the response to snake_case format
-        for easier usage in other modules.
-
-        Args:
-            None
-
-        Returns:
-            dict: A dictionary containing the status with keys in snake_case format.
-
-        Raises:
-            requests.HTTPError: If the POST request returns a bad response.
-            ParseError: If the response doesn't have the expected format or missing 'PanelAnomalies'.
-        """
-        payload = {"sessionId": self._session_id}
-        response = self._session.post(self._router.status, data=payload)
-        _LOGGER.debug(f"Client | Status response: {response}")
-        response.raise_for_status()
-
-        try:
-            # Check if the response has the expected format
-            msg = response.json()
-            status = msg["PanelLeds"]
-            anomalies = msg["PanelAnomalies"]
-        except (KeyError, ValueError):
-            raise ParseError("Unexpected response format from the server.")
-
-        # Merge the 'status' and 'anomalies' dictionaries
-        merged_dict = {**status, **anomalies}
-
-        # Convert the dict to a snake_case one to simplify the usage in other modules
-        snake_case_dict = {_camel_to_snake_case(k): v for k, v in merged_dict.items()}
-        _LOGGER.debug(f"Client | Status retrieved: {snake_case_dict}")
-
-        return snake_case_dict
-
-    @require_session
     def query(self, query):
         """Query an Elmo System to retrieve registered entries. It's possible to query
         different part of the system using the `elmo.query` module:
@@ -600,7 +558,7 @@ class ElmoClient:
         # structure, we default "excluded" as False for sectors. In fact, sectors
         # are never excluded.
 
-        if query == q.SECTORS or query == q.INPUTS:
+        if query in [q.SECTORS, q.INPUTS]:
             entries = response.json()
             _LOGGER.debug(f"Client | Query response: {entries}")
             items = {}
