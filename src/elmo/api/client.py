@@ -604,7 +604,7 @@ class ElmoClient:
 
             # Convert the dict to a snake_case one to simplify the usage in other modules, and sort alphabetically
             new_dict = {
-                i: {"name": _camel_to_snake_case(k), "status": v}
+                i: {"name": _camel_to_snake_case(k), "status": bool(v)}
                 for i, (k, v) in enumerate(sorted(merged_dict.items()))
             }
             _LOGGER.debug(f"Client | Status retrieved: {new_dict}")
