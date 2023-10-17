@@ -602,8 +602,11 @@ class ElmoClient:
             # Merge the 'status' and 'anomalies' dictionaries
             merged_dict = {**status, **anomalies}
 
-            # Convert the dict to a snake_case one to simplify the usage in other modules
-            snake_case_dict = {_camel_to_snake_case(k): v for k, v in merged_dict.items()}
-            _LOGGER.debug(f"Client | Status retrieved: {snake_case_dict}")
+            # Convert the dict to a snake_case one to simplify the usage in other modules, and sort alphabetically
+            new_dict = {
+                i: {"name": _camel_to_snake_case(k), "status": v}
+                for i, (k, v) in enumerate(sorted(merged_dict.items()))
+            }
+            _LOGGER.debug(f"Client | Status retrieved: {new_dict}")
 
-            return snake_case_dict
+            return new_dict
