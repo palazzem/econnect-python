@@ -1603,6 +1603,31 @@ def test_client_query_error(server, mocker):
         client.query(query.SECTORS)
 
 
+def test_client_query_invalid_response(server, mocker):
+    """Should raise ParseError if the response doesn't pass the expected parsing."""
+    html = """[
+       {
+           "Active": true,
+           "ActivePartial": false,
+           "Max": false,
+           "Activable": true,
+           "ActivablePartial": false,
+           "Id": 1,
+           "Index": 0,
+           "Element": 1,
+           "CommandId": 0,
+           "InProgress": false
+       }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/areas", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    # Test
+    with pytest.raises(ParseError):
+        client.query(query.SECTORS)
+
+
 def test_client_get_alerts_status(server):
     """Should query a Elmo system to retrieve alerts status."""
     html = """

@@ -589,8 +589,7 @@ class ElmoClient:
 
             _LOGGER.debug(f"Client | Query parsed successfully: {result}")
             return result
-
-        if query == q.ALERTS:
+        elif query == q.ALERTS:
             try:
                 # Check if the response has the expected format
                 msg = response.json()
@@ -610,3 +609,5 @@ class ElmoClient:
             _LOGGER.debug(f"Client | Status retrieved: {new_dict}")
 
             return new_dict
+        else:
+            raise QueryNotValid()  # pragma: no cover
