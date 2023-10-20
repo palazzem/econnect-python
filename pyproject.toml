@@ -65,3 +65,8 @@ allow-direct-references = true
 
 [tool.pytest.ini_options]
 pythonpath = "src"
+
+[tool.coverage.run]
+omit = [
+  "tests/*",
+]
