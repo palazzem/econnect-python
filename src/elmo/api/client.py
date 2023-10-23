@@ -121,6 +121,7 @@ class ElmoClient:
             "sessionId": self._session_id,
             "Areas": ids[q.SECTORS],
             "Inputs": ids[q.INPUTS],
+            "StatusAdv": ids[q.ALERTS],
             "CanElevate": "1",
             "ConnectionStatus": "1",
         }
@@ -132,9 +133,10 @@ class ElmoClient:
         state = response.json()
         try:
             update = {
-                "has_changes": state["Areas"] or state["Inputs"],
+                "has_changes": state["Areas"] or state["Inputs"] or state["StatusAdv"],
                 "areas": state["Areas"],
                 "inputs": state["Inputs"],
+                "statusadv": state["StatusAdv"],
             }
         except KeyError as err:
             raise ParseError(f"Client | Unable to parse poll response: {err} is missing") from err
@@ -593,6 +595,7 @@ class ElmoClient:
             try:
                 # Check if the response has the expected format
                 msg = response.json()
+                last_id = msg["StatusUid"]
                 status = msg["PanelLeds"]
                 anomalies = msg["PanelAnomalies"]
             except (KeyError, ValueError):
@@ -603,8 +606,11 @@ class ElmoClient:
 
             # Convert the dict to a snake_case one to simplify the usage in other modules, and sort alphabetically
             new_dict = {
-                i: {"name": _camel_to_snake_case(k), "status": v}
-                for i, (k, v) in enumerate(sorted(merged_dict.items()))
+                "last_id": last_id,
+                "alerts": {
+                    i: {"name": _camel_to_snake_case(k), "status": v}
+                    for i, (k, v) in enumerate(sorted(merged_dict.items()))
+                },
             }
             _LOGGER.debug(f"Client | Status retrieved: {new_dict}")
 
