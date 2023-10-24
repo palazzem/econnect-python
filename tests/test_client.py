@@ -273,14 +273,16 @@ def test_client_poll(server):
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
+        query.ALERTS: 424242,
     }
     # Test
     state = client.poll(ids)
-    assert len(state.keys()) == 3
+    assert len(state.keys()) == 4
     # Check response
     assert state["has_changes"] is False
     assert state["inputs"] is False
     assert state["areas"] is False
+    assert state["statusadv"] is False
     # Check request
     body = server.calls[0].request.body.split("&")
     assert "sessionId=test" in body
@@ -308,7 +310,7 @@ def test_client_poll_with_changes(server):
             "Strings": 0,
             "ManagedAccounts": false,
             "Temperature": false,
-            "StatusAdv": false,
+            "StatusAdv": true,
             "Images": false,
             "AdditionalInfoSupported": true,
             "HasChanges": true
@@ -320,13 +322,15 @@ def test_client_poll_with_changes(server):
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
+        query.ALERTS: 424242,
     }
     # Test
     state = client.poll(ids)
-    assert len(state.keys()) == 3
+    assert len(state.keys()) == 4
     assert state["has_changes"] is True
     assert state["inputs"] is True
     assert state["areas"] is True
+    assert state["statusadv"] is True
 
 
 def test_client_poll_ignore_has_changes(server):
@@ -359,10 +363,11 @@ def test_client_poll_ignore_has_changes(server):
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
+        query.ALERTS: 424242,
     }
     # Test
     state = client.poll(ids)
-    assert len(state.keys()) == 3
+    assert len(state.keys()) == 4
     assert state["has_changes"] is False
 
 
@@ -379,6 +384,7 @@ def test_client_poll_unknown_error(server):
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
+        query.ALERTS: 424242,
     }
     # Test
     with pytest.raises(HTTPError):
@@ -386,39 +392,114 @@ def test_client_poll_unknown_error(server):
     assert len(server.calls) == 1
 
 
-def test_client_poll_parse_error(server):
-    """Should raise a ParseError if the response is different from what is expected.
-    In this case `Areas` and `Inputs` are missing from the response."""
-    html = """
-        {
-            "ConnectionStatus": false,
-            "CanElevate": false,
-            "LoggedIn": false,
-            "LoginInProgress": false,
-            "Events": false,
-            "Outputs": false,
-            "Anomalies": false,
-            "ReadStringsInProgress": false,
-            "ReadStringPercentage": 0,
-            "Strings": 0,
-            "ManagedAccounts": false,
-            "Temperature": false,
-            "StatusAdv": false,
-            "Images": false,
-            "AdditionalInfoSupported": true,
-            "HasChanges": false
+class TestClientPollParseError:
+    def test_areas_missing(self, server):
+        """Should raise a ParseError if the response is different from what is expected.
+        In this case `Areas` is missing from the response."""
+        html = """
+            {
+                "ConnectionStatus": false,
+                "CanElevate": false,
+                "LoggedIn": false,
+                "LoginInProgress": false,
+                "Events": true,
+                "Inputs": false,
+                "Outputs": false,
+                "Anomalies": false,
+                "ReadStringsInProgress": false,
+                "ReadStringPercentage": 0,
+                "Strings": 0,
+                "ManagedAccounts": false,
+                "Temperature": false,
+                "StatusAdv": false,
+                "Images": false,
+                "AdditionalInfoSupported": true,
+                "HasChanges": false
+            }
+        """
+        server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        ids = {
+            query.SECTORS: 42,
+            query.INPUTS: 4242,
+            query.ALERTS: 424242,
         }
-    """
-    server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
-    client = ElmoClient(base_url="https://example.com", domain="domain")
-    client._session_id = "test"
-    ids = {
-        query.SECTORS: 42,
-        query.INPUTS: 4242,
-    }
-    # Test
-    with pytest.raises(ParseError):
-        client.poll(ids)
+        # Test
+        with pytest.raises(ParseError):
+            client.poll(ids)
+
+    def test_inputs_missing(self, server):
+        """Should raise a ParseError if the response is different from what is expected.
+        In this case `Inputs` is missing from the response."""
+        html = """
+            {
+                "ConnectionStatus": false,
+                "CanElevate": false,
+                "LoggedIn": false,
+                "LoginInProgress": false,
+                "Areas": false,
+                "Events": true,
+                "Outputs": false,
+                "Anomalies": false,
+                "ReadStringsInProgress": false,
+                "ReadStringPercentage": 0,
+                "Strings": 0,
+                "ManagedAccounts": false,
+                "Temperature": false,
+                "StatusAdv": false,
+                "Images": false,
+                "AdditionalInfoSupported": true,
+                "HasChanges": false
+            }
+        """
+        server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        ids = {
+            query.SECTORS: 42,
+            query.INPUTS: 4242,
+            query.ALERTS: 424242,
+        }
+        # Test
+        with pytest.raises(ParseError):
+            client.poll(ids)
+
+    def test_statusadv_missing(self, server):
+        """Should raise a ParseError if the response is different from what is expected.
+        In this case `StatusAdv` is missing from the response."""
+        html = """
+            {
+                "ConnectionStatus": false,
+                "CanElevate": false,
+                "LoggedIn": false,
+                "LoginInProgress": false,
+                "Areas": false,
+                "Events": true,
+                "Inputs": false,
+                "Outputs": false,
+                "Anomalies": false,
+                "ReadStringsInProgress": false,
+                "ReadStringPercentage": 0,
+                "Strings": 0,
+                "ManagedAccounts": false,
+                "Temperature": false,
+                "Images": false,
+                "AdditionalInfoSupported": true,
+                "HasChanges": false
+            }
+        """
+        server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        ids = {
+            query.SECTORS: 42,
+            query.INPUTS: 4242,
+            query.ALERTS: 424242,
+        }
+        # Test
+        with pytest.raises(ParseError):
+            client.poll(ids)
 
 
 def test_client_lock(server, mocker):
@@ -1680,31 +1761,34 @@ def test_client_get_alerts_status(server):
     assert body == "sessionId=test"
     # Expected output
     assert alerts == {
-        0: {"name": "alarm_led", "status": 0},
-        1: {"name": "anomalies_led", "status": 1},
-        2: {"name": "device_failure", "status": 0},
-        3: {"name": "device_low_battery", "status": 0},
-        4: {"name": "device_no_power", "status": 0},
-        5: {"name": "device_no_supervision", "status": 0},
-        6: {"name": "device_system_block", "status": 0},
-        7: {"name": "device_tamper", "status": 0},
-        8: {"name": "gsm_anomaly", "status": 0},
-        9: {"name": "gsm_low_balance", "status": 0},
-        10: {"name": "has_anomaly", "status": False},
-        11: {"name": "input_alarm", "status": 0},
-        12: {"name": "input_bypass", "status": 0},
-        13: {"name": "input_failure", "status": 0},
-        14: {"name": "input_low_battery", "status": 0},
-        15: {"name": "input_no_supervision", "status": 0},
-        16: {"name": "inputs_led", "status": 2},
-        17: {"name": "module_registration", "status": 0},
-        18: {"name": "panel_low_battery", "status": 0},
-        19: {"name": "panel_no_power", "status": 0},
-        20: {"name": "panel_tamper", "status": 0},
-        21: {"name": "pstn_anomaly", "status": 0},
-        22: {"name": "rf_interference", "status": 0},
-        23: {"name": "system_test", "status": 0},
-        24: {"name": "tamper_led", "status": 0},
+        "last_id": 1,
+        "alerts": {
+            0: {"name": "alarm_led", "status": 0},
+            1: {"name": "anomalies_led", "status": 1},
+            2: {"name": "device_failure", "status": 0},
+            3: {"name": "device_low_battery", "status": 0},
+            4: {"name": "device_no_power", "status": 0},
+            5: {"name": "device_no_supervision", "status": 0},
+            6: {"name": "device_system_block", "status": 0},
+            7: {"name": "device_tamper", "status": 0},
+            8: {"name": "gsm_anomaly", "status": 0},
+            9: {"name": "gsm_low_balance", "status": 0},
+            10: {"name": "has_anomaly", "status": False},
+            11: {"name": "input_alarm", "status": 0},
+            12: {"name": "input_bypass", "status": 0},
+            13: {"name": "input_failure", "status": 0},
+            14: {"name": "input_low_battery", "status": 0},
+            15: {"name": "input_no_supervision", "status": 0},
+            16: {"name": "inputs_led", "status": 2},
+            17: {"name": "module_registration", "status": 0},
+            18: {"name": "panel_low_battery", "status": 0},
+            19: {"name": "panel_no_power", "status": 0},
+            20: {"name": "panel_tamper", "status": 0},
+            21: {"name": "pstn_anomaly", "status": 0},
+            22: {"name": "rf_interference", "status": 0},
+            23: {"name": "system_test", "status": 0},
+            24: {"name": "tamper_led", "status": 0},
+        },
     }
 
 
