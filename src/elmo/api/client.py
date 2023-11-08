@@ -115,12 +115,15 @@ class ElmoClient:
                 {
                     "areas": False,
                     "inputs": True,
+                    "outputs": False,
+                    "statusAdv": False,
                 }
         """
         payload = {
             "sessionId": self._session_id,
             "Areas": ids[q.SECTORS],
             "Inputs": ids[q.INPUTS],
+            "Outputs": ids[q.OUTPUTS],
             "StatusAdv": ids[q.ALERTS],
             "CanElevate": "1",
             "ConnectionStatus": "1",
@@ -133,9 +136,10 @@ class ElmoClient:
         state = response.json()
         try:
             update = {
-                "has_changes": state["Areas"] or state["Inputs"] or state["StatusAdv"],
+                "has_changes": state["Areas"] or state["Inputs"] or state["Outputs"] or state["StatusAdv"],
                 "areas": state["Areas"],
                 "inputs": state["Inputs"],
+                "outputs": state["Outputs"],
                 "statusadv": state["StatusAdv"],
             }
         except KeyError as err:
@@ -499,6 +503,7 @@ class ElmoClient:
 
             sectors = client.query(query.SECTORS).get("sectors")
             inputs = client.query(query.INPUTS).get("inputs")
+            outputs = client.query(query.OUTPUTS).get("outputs")
 
         Raises:
             QueryNotValid: if the query is not recognized.
@@ -530,6 +535,7 @@ class ElmoClient:
             `last_id`: is the last ID of the query, used to retrieve new state changes
             `sectors`: is the key you use to retrieve sectors if that was the query
             `inputs`: is the key you use to retrieve inputs if that was the query
+            'outputs`: is the key you use to retrieve outputs if that was the query
         """
         # Query detection
         if query == q.SECTORS:
@@ -542,6 +548,11 @@ class ElmoClient:
             key_group = "inputs"
             endpoint = self._router.inputs
             _LOGGER.debug("Client | Querying inputs")
+        elif query == q.OUTPUTS:
+            status = "Active"
+            key_group = "outputs"
+            endpoint = self._router.outputs
+            _LOGGER.debug("Client | Querying outputs")
         elif query == q.ALERTS:
             endpoint = self._router.status
             _LOGGER.debug("Client | Querying alerts")
@@ -552,7 +563,7 @@ class ElmoClient:
         response = self._session.post(endpoint, data={"sessionId": self._session_id})
         response.raise_for_status()
 
-        if query in [q.SECTORS, q.INPUTS]:
+        if query in [q.SECTORS, q.INPUTS, q.OUTPUTS]:
             # Retrieve description or use the cache
             descriptions = self._get_descriptions()
 
@@ -572,7 +583,7 @@ class ElmoClient:
                     if entry["InUse"]:
                         # Address potential data inconsistency between cloud data and main unit.
                         # In some installations, they may be out of sync, resulting in the cloud
-                        # providing a sector/input that doesn't actually exist in the main unit.
+                        # providing a sector/input/output that doesn't actually exist in the main unit.
                         # To handle this, we default the name to "Unknown" if its description
                         # isn't found in the cloud data to prevent KeyError.
                         name = descriptions[query].get(entry["Index"], "Unknown")
