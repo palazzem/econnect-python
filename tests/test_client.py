@@ -1567,7 +1567,7 @@ def test_client_get_inputs_status(server, mocker):
 
 
 def test_client_get_outputs_status(server, mocker):
-    """Should query a Elmo system to retrieve inputs status."""
+    """Should query a Elmo system to retrieve outputs status."""
     html = """[
        {
         "Active": true,
