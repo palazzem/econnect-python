@@ -29,6 +29,7 @@ def client():
         server.add(responses.POST, "https://example.com/api/strings", body=r.STRINGS, status=200)
         server.add(responses.POST, "https://example.com/api/areas", body=r.AREAS, status=200)
         server.add(responses.POST, "https://example.com/api/inputs", body=r.INPUTS, status=200)
+        server.add(responses.POST, "https://example.com/api/outputs", body=r.OUTPUTS, status=200)
         yield client
 
 
