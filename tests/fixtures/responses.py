@@ -134,6 +134,38 @@ STRINGS = """[
         "Description": "Outdoor Sensor 3",
         "Created": "/Date(1546004147493+0100)/",
         "Version": "AAAAAAAAgRw="
+    },
+    {
+        "AccountId": 1,
+        "Class": 12,
+        "Index": 0,
+        "Description": "Output 1",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
+    },
+    {
+        "AccountId": 1,
+        "Class": 12,
+        "Index": 1,
+        "Description": "Output 2",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
+    },
+    {
+        "AccountId": 1,
+        "Class": 12,
+        "Index": 2,
+        "Description": "Output 3",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
+    },
+    {
+        "AccountId": 3,
+        "Class": 12,
+        "Index": 3,
+        "Description": "Output 4",
+        "Created": "/Date(1546004147493+0100)/",
+        "Version": "AAAAAAAAgRw="
     }
 ]"""
 AREAS = """[
@@ -234,6 +266,52 @@ INPUTS = """[
        "InUse": false,
        "IsVideo": false,
        "Id": 42,
+       "Index": 3,
+       "Element": 4,
+       "CommandId": 0,
+       "InProgress": false
+   }
+]"""
+OUTPUTS = """[
+   {
+       "Active": true,
+       "InUse": true,
+       "DoNotRequireAuthentication": true,
+       "ControlDeniedToUsers": false,
+       "Id": 400258,
+       "Index": 0,
+       "Element": 1,
+       "CommandId": 0,
+       "InProgress": false
+   },
+   {
+       "Active": false,
+       "InUse": true,
+       "DoNotRequireAuthentication": false,
+       "ControlDeniedToUsers": false,
+       "Id": 400259,
+       "Index": 1,
+       "Element": 2,
+       "CommandId": 0,
+       "InProgress": false
+   },
+   {
+       "Active": false,
+       "InUse": true,
+       "DoNotRequireAuthentication": false,
+       "ControlDeniedToUsers": false,
+       "Id": 400260,
+       "Index": 2,
+       "Element": 3,
+       "CommandId": 0,
+       "InProgress": false
+   },
+   {
+       "Active": false,
+       "InUse": false,
+       "DoNotRequireAuthentication": false,
+       "ControlDeniedToUsers": false,
+       "Id": 400261,
        "Index": 3,
        "Element": 4,
        "CommandId": 0,

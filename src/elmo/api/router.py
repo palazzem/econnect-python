@@ -54,3 +54,7 @@ class Router:
     @property
     def inputs(self):
         return "{}/api/inputs".format(self._base_url)
+
+    @property
+    def outputs(self):
+        return "{}/api/outputs".format(self._base_url)

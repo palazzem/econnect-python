@@ -273,21 +273,24 @@ def test_client_poll(server):
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
+        query.OUTPUTS: 424,
         query.ALERTS: 424242,
     }
     # Test
     state = client.poll(ids)
-    assert len(state.keys()) == 4
+    assert len(state.keys()) == 5
     # Check response
     assert state["has_changes"] is False
     assert state["inputs"] is False
     assert state["areas"] is False
+    assert state["outputs"] is False
     assert state["statusadv"] is False
     # Check request
     body = server.calls[0].request.body.split("&")
     assert "sessionId=test" in body
     assert "Areas=42" in body
     assert "Inputs=4242" in body
+    assert "Outputs=424" in body
     assert "CanElevate=1" in body
     assert "ConnectionStatus=1" in body
 
@@ -303,7 +306,7 @@ def test_client_poll_with_changes(server):
             "Areas": true,
             "Events": false,
             "Inputs": true,
-            "Outputs": false,
+            "Outputs": true,
             "Anomalies": false,
             "ReadStringsInProgress": false,
             "ReadStringPercentage": 0,
@@ -322,14 +325,16 @@ def test_client_poll_with_changes(server):
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
+        query.OUTPUTS: 424,
         query.ALERTS: 424242,
     }
     # Test
     state = client.poll(ids)
-    assert len(state.keys()) == 4
+    assert len(state.keys()) == 5
     assert state["has_changes"] is True
     assert state["inputs"] is True
     assert state["areas"] is True
+    assert state["outputs"] is True
     assert state["statusadv"] is True
 
 
@@ -363,11 +368,12 @@ def test_client_poll_ignore_has_changes(server):
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
+        query.OUTPUTS: 424,
         query.ALERTS: 424242,
     }
     # Test
     state = client.poll(ids)
-    assert len(state.keys()) == 4
+    assert len(state.keys()) == 5
     assert state["has_changes"] is False
 
 
@@ -384,6 +390,7 @@ def test_client_poll_unknown_error(server):
     ids = {
         query.SECTORS: 42,
         query.INPUTS: 4242,
+        query.OUTPUTS: 424,
         query.ALERTS: 424242,
     }
     # Test
@@ -423,6 +430,7 @@ class TestClientPollParseError:
         ids = {
             query.SECTORS: 42,
             query.INPUTS: 4242,
+            query.OUTPUTS: 424,
             query.ALERTS: 424242,
         }
         # Test
@@ -459,6 +467,44 @@ class TestClientPollParseError:
         ids = {
             query.SECTORS: 42,
             query.INPUTS: 4242,
+            query.OUTPUTS: 424,
+            query.ALERTS: 424242,
+        }
+        # Test
+        with pytest.raises(ParseError):
+            client.poll(ids)
+
+    def test_outputs_missing(self, server):
+        """Should raise a ParseError if the response is different from what is expected.
+        In this case `Outputs` is missing from the response."""
+        html = """
+            {
+                "ConnectionStatus": false,
+                "CanElevate": false,
+                "LoggedIn": false,
+                "LoginInProgress": false,
+                "Areas": false,
+                "Events": true,
+                "Inputs": false,
+                "Anomalies": false,
+                "ReadStringsInProgress": false,
+                "ReadStringPercentage": 0,
+                "Strings": 0,
+                "ManagedAccounts": false,
+                "Temperature": false,
+                "StatusAdv": false,
+                "Images": false,
+                "AdditionalInfoSupported": true,
+                "HasChanges": false
+            }
+        """
+        server.add(responses.POST, "https://example.com/api/updates", body=html, status=200)
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        ids = {
+            query.SECTORS: 42,
+            query.INPUTS: 4242,
+            query.OUTPUTS: 424,
             query.ALERTS: 424242,
         }
         # Test
@@ -495,6 +541,7 @@ class TestClientPollParseError:
         ids = {
             query.SECTORS: 42,
             query.INPUTS: 4242,
+            query.OUTPUTS: 424,
             query.ALERTS: 424242,
         }
         # Test
@@ -1514,6 +1561,99 @@ def test_client_get_inputs_status(server, mocker):
                 "index": 2,
                 "excluded": True,
                 "name": "Door entryway",
+            },
+        },
+    }
+
+
+def test_client_get_outputs_status(server, mocker):
+    """Should query a Elmo system to retrieve outputs status."""
+    html = """[
+       {
+        "Active": true,
+        "InUse": true,
+        "DoNotRequireAuthentication": true,
+        "ControlDeniedToUsers": false,
+        "Id": 400258,
+        "Index": 0,
+        "Element": 1,
+        "CommandId": 0,
+        "InProgress": false
+    },
+    {
+        "Active": false,
+        "InUse": true,
+        "DoNotRequireAuthentication": false,
+        "ControlDeniedToUsers": false,
+        "Id": 400259,
+        "Index": 1,
+        "Element": 2,
+        "CommandId": 0,
+        "InProgress": false
+    },
+    {
+        "Active": false,
+        "InUse": true,
+        "DoNotRequireAuthentication": false,
+        "ControlDeniedToUsers": false,
+        "Id": 400260,
+        "Index": 2,
+        "Element": 3,
+        "CommandId": 0,
+        "InProgress": false
+    },
+    {
+        "Active": false,
+        "InUse": false,
+        "DoNotRequireAuthentication": false,
+        "ControlDeniedToUsers": false,
+        "Id": 400261,
+        "Index": 3,
+        "Element": 4,
+        "CommandId": 0,
+        "InProgress": false
+    }
+    ]"""
+    # query() depends on _get_descriptions()
+    server.add(responses.POST, "https://example.com/api/outputs", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {
+        12: {0: "Output 1", 1: "Output 2", 2: "Output 3", 3: "Output 4"},
+    }
+    # Test
+    outputs = client.query(query.OUTPUTS)
+    # Expected output
+    assert client._get_descriptions.called is True
+    assert len(server.calls) == 1
+
+    assert outputs == {
+        "last_id": 400261,
+        "outputs": {
+            0: {
+                "element": 1,
+                "id": 400258,
+                "index": 0,
+                "status": True,
+                "excluded": False,
+                "name": "Output 1",
+            },
+            1: {
+                "element": 2,
+                "id": 400259,
+                "index": 1,
+                "status": False,
+                "excluded": False,
+                "name": "Output 2",
+            },
+            2: {
+                "element": 3,
+                "id": 400260,
+                "status": False,
+                "index": 2,
+                "excluded": False,
+                "name": "Output 3",
             },
         },
     }
