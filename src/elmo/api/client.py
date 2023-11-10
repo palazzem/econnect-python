@@ -230,50 +230,43 @@ class ElmoClient:
         Args:
             sector: (optional) list of sectors that must be armed. If the variable is
             empty, ALL is assumed and the entire system is armed. If multiple items
-            are in the list, multiple requests are sent to arm given sectors.
+            are in the list, one request are sent to arm given sectors.
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
             A boolean if the system has been armed correctly.
         """
-        payloads = []
         sectors = sectors or []
 
         if sectors:
             # Arm only selected sectors
             _LOGGER.debug(f"Client | Arming sectors: {sectors}")
-            for sector in sectors:
-                payloads.append(
-                    {
-                        "CommandType": 1,
-                        "ElementsClass": 9,
-                        "ElementsIndexes": sector,
-                        "sessionId": self._session_id,
-                    }
-                )
+            payload = {
+                "CommandType": 1,
+                "ElementsClass": 9,
+                "ElementsIndexes": sectors,
+                "sessionId": self._session_id,
+            }
         else:
             # Arm ALL sectors
             _LOGGER.debug("Client | Arming all sectors")
-            payloads = [
-                {
-                    "CommandType": 1,
-                    "ElementsClass": 1,
-                    "ElementsIndexes": 1,
-                    "sessionId": self._session_id,
-                }
-            ]
+            payload = {
+                "CommandType": 1,
+                "ElementsClass": 1,
+                "ElementsIndexes": 1,
+                "sessionId": self._session_id,
+            }
 
-        # Arming multiple sectors requires multiple requests
+        # Send the payload to arm sectors
+        response = self._session.post(self._router.send_command, data=payload)
+        response.raise_for_status()
+
         errors = []
-        for payload in payloads:
-            response = self._session.post(self._router.send_command, data=payload)
-            response.raise_for_status()
-
-            # A not existing sector returns 200 with a fail state
-            body = response.json()
-            _LOGGER.debug(f"Client | Arming response: {body}")
-            if not body[0]["Successful"]:
-                errors.append(payload["ElementsIndexes"])
+        # A not existing sector returns 200 with a fail state
+        body = response.json()
+        _LOGGER.debug(f"Client | Arming response: {body}")
+        if not body[0]["Successful"]:
+            errors.append(payload["ElementsIndexes"])
 
         # Raise an exception if errors are detected
         if errors:
@@ -302,44 +295,38 @@ class ElmoClient:
         Returns:
             A boolean if the system has been disarmed correctly.
         """
-        payloads = []
         sectors = sectors or []
 
         if sectors:
             # Disarm only selected sectors
             _LOGGER.debug(f"Client | Disarming sectors: {sectors}")
-            for sector in sectors:
-                payloads.append(
-                    {
-                        "CommandType": 2,
-                        "ElementsClass": 9,
-                        "ElementsIndexes": sector,
-                        "sessionId": self._session_id,
-                    }
-                )
+            payload = {
+                "CommandType": 2,
+                "ElementsClass": 9,
+                "ElementsIndexes": sectors,
+                "sessionId": self._session_id,
+            }
+
         else:
             # Disarm ALL sectors
             _LOGGER.debug("Client | Disarming all sectors")
-            payloads = [
-                {
-                    "CommandType": 2,
-                    "ElementsClass": 1,
-                    "ElementsIndexes": 1,
-                    "sessionId": self._session_id,
-                }
-            ]
+            payload = {
+                "CommandType": 2,
+                "ElementsClass": 1,
+                "ElementsIndexes": 1,
+                "sessionId": self._session_id,
+            }
 
-        # Disarming multiple sectors requires multiple requests
+        # Send the payload to disarm sectors
+        response = self._session.post(self._router.send_command, data=payload)
+        response.raise_for_status()
+
         errors = []
-        for payload in payloads:
-            response = self._session.post(self._router.send_command, data=payload)
-            response.raise_for_status()
-
-            # A not existing sector returns 200 with a fail state
-            body = response.json()
-            _LOGGER.debug(f"Client | Disarming response: {body}")
-            if not body[0]["Successful"]:
-                errors.append(payload["ElementsIndexes"])
+        # A not existing sector returns 200 with a fail state
+        body = response.json()
+        _LOGGER.debug(f"Client | Disarming response: {body}")
+        if not body[0]["Successful"]:
+            errors.append(payload["ElementsIndexes"])
 
         # Raise an exception if errors are detected
         if errors:

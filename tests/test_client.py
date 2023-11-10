@@ -773,7 +773,35 @@ def test_client_arm(server):
     assert "sessionId=test" in body
 
 
-def test_client_arm_sectors(server):
+def test_client_arm_single_sector(server):
+    """Should call the API and arm only the given sector."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": true
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    client._lock.acquire()
+    # Test
+    assert client.arm([3]) is True
+    assert len(server.calls) == 1
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=1" in body
+    assert "ElementsClass=9" in body
+    assert "ElementsIndexes=3" in body
+    assert "sessionId=test" in body
+
+
+def test_client_arm_multiple_sectors(server):
     """Should call the API and arm only the given sectors."""
     html = """[
         {
@@ -793,15 +821,11 @@ def test_client_arm_sectors(server):
     client._lock.acquire()
     # Test
     assert client.arm([3, 4]) is True
-    assert len(server.calls) == 2
+    assert len(server.calls) == 1
     body = server.calls[0].request.body.split("&")
     assert "CommandType=1" in body
     assert "ElementsClass=9" in body
     assert "ElementsIndexes=3" in body
-    assert "sessionId=test" in body
-    body = server.calls[1].request.body.split("&")
-    assert "CommandType=1" in body
-    assert "ElementsClass=9" in body
     assert "ElementsIndexes=4" in body
     assert "sessionId=test" in body
 
@@ -901,7 +925,35 @@ def test_client_disarm(server):
     assert "sessionId=test" in body
 
 
-def test_client_disarm_sectors(server):
+def test_client_disarm_single_sector(server):
+    """Should call the API and disarm only the given sector."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": true
+        }
+    ]"""
+    server.add(
+        responses.POST,
+        "https://example.com/api/panel/syncSendCommand",
+        body=html,
+        status=200,
+    )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    client._lock.acquire()
+    # Test
+    assert client.disarm([3]) is True
+    assert len(server.calls) == 1
+    body = server.calls[0].request.body.split("&")
+    assert "CommandType=2" in body
+    assert "ElementsClass=9" in body
+    assert "ElementsIndexes=3" in body
+    assert "sessionId=test" in body
+
+
+def test_client_disarm_multiple_sectors(server):
     """Should call the API and disarm only the given sectors."""
     html = """[
         {
@@ -921,15 +973,11 @@ def test_client_disarm_sectors(server):
     client._lock.acquire()
     # Test
     assert client.disarm([3, 4]) is True
-    assert len(server.calls) == 2
+    assert len(server.calls) == 1
     body = server.calls[0].request.body.split("&")
     assert "CommandType=2" in body
     assert "ElementsClass=9" in body
     assert "ElementsIndexes=3" in body
-    assert "sessionId=test" in body
-    body = server.calls[1].request.body.split("&")
-    assert "CommandType=2" in body
-    assert "ElementsClass=9" in body
     assert "ElementsIndexes=4" in body
     assert "sessionId=test" in body
 
