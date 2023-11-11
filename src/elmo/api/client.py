@@ -452,6 +452,109 @@ class ElmoClient:
         _LOGGER.debug("Client | Including successful")
         return True
 
+    @require_session
+    def activate_output(self, outputs):
+        # Only outputs that are configured in the control panel with the option
+        # "Manual Control" can be activated
+        # If the output is configured with "Require Authentication" flag in the control panel
+        # can be activated only if the panel is locked
+        """Activate passed outputs
+
+        This API provides the same effects as turning them
+        from "not active" to "active" on the E-Connect web UI.
+
+            client.activate([3])  # Activate only output 3
+            client.activate([3, 5])  # Activate output 3 and 5
+
+        Args:
+            outputs: list of outputs that must be excluded. If multiple items
+            are in the list, one requests is sent to activate given outputs.
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the output has been excluded correctly.
+        """
+
+        # Exclude only selected inputs
+        _LOGGER.debug(f"Client | Activating outputs: {outputs}")
+        payload = {
+            "CommandType": 1,
+            "ElementsClass": 12,
+            "ElementsIndexes": outputs,
+            "sessionId": self._session_id,
+        }
+
+        errors = []
+
+        # Send Activate request
+        response = self._session.post(self._router.send_command, data=payload)
+        response.raise_for_status()
+
+        # A not existing output returns 200 with a fail state
+        body = response.json()
+        _LOGGER.debug(f"Client | Activating response: {body}")
+        if not body[0]["Successful"]:
+            errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_outputs = ",".join(str(x) for x in errors)
+            raise InvalidInput("Selected outputs don't exist: {}".format(invalid_outputs))
+
+        _LOGGER.debug("Client | Activating output successful")
+        return True
+
+    @require_session
+    def deactivate_output(self, outputs):
+        # Only outputs that are configured in the control panel with the option
+        # "Manual Control" can be deactivated
+        # If the output is configured with "Require Authentication" flag in the control panel
+        # can be deactivated only if the panel is locked
+        """Deactivate passed outputs
+
+        This API provides the same effects as turning them
+        from "active" to "not active" on the E-Connect web UI.
+
+            client.deactivate([3])  # Deactivate only output 3
+            client.deactivate([3, 5])  # Deactivate output 3 and 5
+
+        Args:
+            outputs: list of outputs that must be deactivated. If multiple items
+            are in the list, one requests is sent to deactivate given outputs.
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the output has been deactivated correctly.
+        """
+
+        # Exclude only selected inputs
+        _LOGGER.debug(f"Client | Deactivating outputs: {outputs}")
+        payload = {
+            "CommandType": 2,
+            "ElementsClass": 12,
+            "ElementsIndexes": outputs,
+            "sessionId": self._session_id,
+        }
+
+        # Send deatctivate request
+        response = self._session.post(self._router.send_command, data=payload)
+        response.raise_for_status()
+
+        errors = []
+        # A not existing output returns 200 with a fail state
+        body = response.json()
+        _LOGGER.debug(f"Client | Deactivating response: {body}")
+        if not body[0]["Successful"]:
+            errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_outputs = ",".join(str(x) for x in errors)
+            raise InvalidInput("Selected outputs don't exist: {}".format(invalid_outputs))
+
+        _LOGGER.debug("Client | Deactivating output successful")
+        return True
+
     @lru_cache(maxsize=1)
     @require_session
     def _get_descriptions(self):
