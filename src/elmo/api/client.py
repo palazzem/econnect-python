@@ -453,30 +453,31 @@ class ElmoClient:
         return True
 
     @require_session
-    def activate_output(self, outputs):
-        # Only outputs that are configured in the control panel with the option
-        # "Manual Control" can be activated
-        # If the output is configured with "Require Authentication" flag in the control panel
-        # can be activated only if the panel is locked
-        """Activate passed outputs
+    def output_turn_on(self, outputs):
+        """Turn on passed outputs
 
         This API provides the same effects as turning them
         from "not active" to "active" on the E-Connect web UI.
 
-            client.activate([3])  # Activate only output 3
-            client.activate([3, 5])  # Activate output 3 and 5
+        Only outputs that are configured in the control panel with the option
+        "Manual Control" can be turned on
+        If the output is configured with "Require Authentication" flag in the control panel
+        can be turned on only if the panel is locked
+
+            client.activate([3])  # Turn on only output 3
+            client.activate([3, 5])  # Turn on output 3 and 5
 
         Args:
-            outputs: list of outputs that must be excluded. If multiple items
-            are in the list, one requests is sent to activate given outputs.
+            outputs: list of outputs that must be turned on. If multiple items
+            are in the list, one requests is sent to turn on given outputs.
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A boolean if the output has been excluded correctly.
+            A boolean if the output has been turned on correctly.
         """
 
         # Exclude only selected inputs
-        _LOGGER.debug(f"Client | Activating outputs: {outputs}")
+        _LOGGER.debug(f"Client | Turning on outputs: {outputs}")
         payload = {
             "CommandType": 1,
             "ElementsClass": 12,
@@ -486,13 +487,13 @@ class ElmoClient:
 
         errors = []
 
-        # Send Activate request
+        # Send turn on request
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
 
         # A not existing output returns 200 with a fail state
         body = response.json()
-        _LOGGER.debug(f"Client | Activating response: {body}")
+        _LOGGER.debug(f"Client | Turning on response: {body}")
         if not body[0]["Successful"]:
             errors.append(payload["ElementsIndexes"])
 
@@ -501,34 +502,35 @@ class ElmoClient:
             invalid_outputs = ",".join(str(x) for x in errors)
             raise InvalidInput("Selected outputs don't exist: {}".format(invalid_outputs))
 
-        _LOGGER.debug("Client | Activating output successful")
+        _LOGGER.debug("Client | Turning on output successful")
         return True
 
     @require_session
-    def deactivate_output(self, outputs):
-        # Only outputs that are configured in the control panel with the option
-        # "Manual Control" can be deactivated
-        # If the output is configured with "Require Authentication" flag in the control panel
-        # can be deactivated only if the panel is locked
-        """Deactivate passed outputs
+    def output_turn_off(self, outputs):
+        """Turn off passed outputs
 
         This API provides the same effects as turning them
         from "active" to "not active" on the E-Connect web UI.
 
-            client.deactivate([3])  # Deactivate only output 3
-            client.deactivate([3, 5])  # Deactivate output 3 and 5
+        Only outputs that are configured in the control panel with the option
+        "Manual Control" can be turned off
+        If the output is configured with "Require Authentication" flag in the control panel
+        can be turned off only if the panel is locked
+
+            client.deactivate([3])  # Turn off only output 3
+            client.deactivate([3, 5])  # Turn off output 3 and 5
 
         Args:
-            outputs: list of outputs that must be deactivated. If multiple items
-            are in the list, one requests is sent to deactivate given outputs.
+            outputs: list of outputs that must be turned off. If multiple items
+            are in the list, one requests is sent to turn off given outputs.
         Raises:
             HTTPError: if there is an error raised by the API (not 2xx response).
         Returns:
-            A boolean if the output has been deactivated correctly.
+            A boolean if the output has been turned off correctly.
         """
 
-        # Exclude only selected inputs
-        _LOGGER.debug(f"Client | Deactivating outputs: {outputs}")
+        # Turn off only selected outputs
+        _LOGGER.debug(f"Client | Turning off outputs: {outputs}")
         payload = {
             "CommandType": 2,
             "ElementsClass": 12,
@@ -536,14 +538,14 @@ class ElmoClient:
             "sessionId": self._session_id,
         }
 
-        # Send deatctivate request
+        # Send turn off request
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
 
         errors = []
         # A not existing output returns 200 with a fail state
         body = response.json()
-        _LOGGER.debug(f"Client | Deactivating response: {body}")
+        _LOGGER.debug(f"Client | Turning off response: {body}")
         if not body[0]["Successful"]:
             errors.append(payload["ElementsIndexes"])
 
@@ -552,7 +554,7 @@ class ElmoClient:
             invalid_outputs = ",".join(str(x) for x in errors)
             raise InvalidInput("Selected outputs don't exist: {}".format(invalid_outputs))
 
-        _LOGGER.debug("Client | Deactivating output successful")
+        _LOGGER.debug("Client | Turning off output successful")
         return True
 
     @lru_cache(maxsize=1)
