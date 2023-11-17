@@ -1311,7 +1311,7 @@ def test_client_exclude_fails_unknown_error(server):
     assert len(server.calls) == 1
 
 
-class TestOutputTurnOn:
+class TestTurnOn:
     def test_client_single_output(self, server):
         """Should call the API and activate given output."""
         html = """[
@@ -1331,7 +1331,7 @@ class TestOutputTurnOn:
         client = ElmoClient(base_url="https://example.com", domain="domain")
         client._session_id = "test"
         # Test
-        assert client.output_turn_on([3]) is True
+        assert client.turn_on([3]) is True
         assert len(server.calls) == 1
         body = server.calls[0].request.body.split("&")
         assert "CommandType=1" in body
@@ -1358,7 +1358,7 @@ class TestOutputTurnOn:
         client = ElmoClient(base_url="https://example.com", domain="domain")
         client._session_id = "test"
         # Test
-        assert client.output_turn_on([3, 4]) is True
+        assert client.turn_on([3, 4]) is True
         assert len(server.calls) == 1
         body = server.calls[0].request.body.split("&")
         assert "CommandType=1" in body
@@ -1379,7 +1379,7 @@ class TestOutputTurnOn:
         client._lock.acquire()
         # Test
         with pytest.raises(InvalidToken):
-            client.output_turn_on([1])
+            client.turn_on([1])
         assert len(server.calls) == 1
 
     def test_client_fails_wrong_input(self, server):
@@ -1402,7 +1402,7 @@ class TestOutputTurnOn:
         client._session_id = "test"
         # Test
         with pytest.raises(InvalidInput):
-            assert client.output_turn_on([9000])
+            assert client.turn_on([9000])
 
     def test_client_fails_unknown_error(self, server):
         """Should fail if an unknown error happens."""
@@ -1416,11 +1416,11 @@ class TestOutputTurnOn:
         client._session_id = "test"
         # Test
         with pytest.raises(HTTPError):
-            client.output_turn_on([1])
+            client.turn_on([1])
         assert len(server.calls) == 1
 
 
-class TestOutputTurnOff:
+class TestTurnOff:
     def test_client_single_output(self, server):
         """Should call the API and deactivate given output."""
         html = """[
@@ -1440,7 +1440,7 @@ class TestOutputTurnOff:
         client = ElmoClient(base_url="https://example.com", domain="domain")
         client._session_id = "test"
         # Test
-        assert client.output_turn_off([3]) is True
+        assert client.turn_off([3]) is True
         assert len(server.calls) == 1
         body = server.calls[0].request.body.split("&")
         assert "CommandType=2" in body
@@ -1467,7 +1467,7 @@ class TestOutputTurnOff:
         client = ElmoClient(base_url="https://example.com", domain="domain")
         client._session_id = "test"
         # Test
-        assert client.output_turn_off([3, 4]) is True
+        assert client.turn_off([3, 4]) is True
         assert len(server.calls) == 1
         body = server.calls[0].request.body.split("&")
         assert "CommandType=2" in body
@@ -1488,7 +1488,7 @@ class TestOutputTurnOff:
         client._lock.acquire()
         # Test
         with pytest.raises(InvalidToken):
-            client.output_turn_off([1])
+            client.turn_off([1])
         assert len(server.calls) == 1
 
     def test_client_fails_wrong_input(self, server):
@@ -1511,7 +1511,7 @@ class TestOutputTurnOff:
         client._session_id = "test"
         # Test
         with pytest.raises(InvalidInput):
-            assert client.output_turn_off([9000])
+            assert client.turn_off([9000])
 
     def test_client_fails_unknown_error(self, server):
         """Should fail if an unknown error happens."""
@@ -1525,7 +1525,7 @@ class TestOutputTurnOff:
         client._session_id = "test"
         # Test
         with pytest.raises(HTTPError):
-            client.output_turn_off([1])
+            client.turn_off([1])
         assert len(server.calls) == 1
 
 

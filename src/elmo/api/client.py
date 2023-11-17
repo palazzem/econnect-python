@@ -453,7 +453,7 @@ class ElmoClient:
         return True
 
     @require_session
-    def output_turn_on(self, outputs):
+    def turn_on(self, outputs):
         """Turn on passed outputs
 
         This API provides the same effects as turning them
@@ -506,7 +506,7 @@ class ElmoClient:
         return True
 
     @require_session
-    def output_turn_off(self, outputs):
+    def turn_off(self, outputs):
         """Turn off passed outputs
 
         This API provides the same effects as turning them
