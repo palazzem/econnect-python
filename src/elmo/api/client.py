@@ -464,8 +464,8 @@ class ElmoClient:
         If the output is configured with "Require Authentication" flag in the control panel
         can be turned on only if the panel is locked
 
-            client.activate([3])  # Turn on only output 3
-            client.activate([3, 5])  # Turn on output 3 and 5
+            client.turn_on([3])  # Turn on only output 3
+            client.turn_on([3, 5])  # Turn on output 3 and 5
 
         Args:
             outputs: list of outputs that must be turned on. If multiple items
@@ -517,8 +517,8 @@ class ElmoClient:
         If the output is configured with "Require Authentication" flag in the control panel
         can be turned off only if the panel is locked
 
-            client.deactivate([3])  # Turn off only output 3
-            client.deactivate([3, 5])  # Turn off output 3 and 5
+            client.turn_off([3])  # Turn off only output 3
+            client.turn_off([3, 5])  # Turn off output 3 and 5
 
         Args:
             outputs: list of outputs that must be turned off. If multiple items
