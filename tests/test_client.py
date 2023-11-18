@@ -1311,6 +1311,224 @@ def test_client_exclude_fails_unknown_error(server):
     assert len(server.calls) == 1
 
 
+class TestTurnOn:
+    def test_client_single_output(self, server):
+        """Should call the API and activate given output."""
+        html = """[
+            {
+                "Poller": {"Poller": 1, "Panel": 1},
+                "CommandId": 147,
+                "Successful": true,
+                "ErrorMessages": []
+            }
+        ]"""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            body=html,
+            status=200,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        # Test
+        assert client.turn_on([3]) is True
+        assert len(server.calls) == 1
+        body = server.calls[0].request.body.split("&")
+        assert "CommandType=1" in body
+        assert "ElementsClass=12" in body
+        assert "ElementsIndexes=3" in body
+        assert "sessionId=test" in body
+
+    def test_client_multiple_outputs(self, server):
+        """Should call the API and activate given outputs."""
+        html = """[
+            {
+                "Poller": {"Poller": 1, "Panel": 1},
+                "CommandId": 147,
+                "Successful": true,
+                "ErrorMessages": []
+            }
+        ]"""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            body=html,
+            status=200,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        # Test
+        assert client.turn_on([3, 4]) is True
+        assert len(server.calls) == 1
+        body = server.calls[0].request.body.split("&")
+        assert "CommandType=1" in body
+        assert "ElementsClass=12" in body
+        assert "ElementsIndexes=3" in body
+        assert "ElementsIndexes=4" in body
+        assert "sessionId=test" in body
+
+    def test_client_fails_missing_session(self, server):
+        """Should fail if a wrong access token is used."""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            status=401,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        client._lock.acquire()
+        # Test
+        with pytest.raises(InvalidToken):
+            client.turn_on([1])
+        assert len(server.calls) == 1
+
+    def test_client_fails_wrong_input(self, server):
+        """Should fail if a not existing output is used."""
+        html = """[
+            {
+                "Poller": {"Poller": 1, "Panel": 1},
+                "CommandId": 147,
+                "Successful": false,
+                "ErrorMessages": ["Command failed."]
+            }
+        ]"""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            body=html,
+            status=200,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        # Test
+        with pytest.raises(InvalidInput):
+            assert client.turn_on([9000])
+
+    def test_client_fails_unknown_error(self, server):
+        """Should fail if an unknown error happens."""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            body="Server Error",
+            status=500,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        # Test
+        with pytest.raises(HTTPError):
+            client.turn_on([1])
+        assert len(server.calls) == 1
+
+
+class TestTurnOff:
+    def test_client_single_output(self, server):
+        """Should call the API and deactivate given output."""
+        html = """[
+            {
+                "Poller": {"Poller": 1, "Panel": 1},
+                "CommandId": 147,
+                "Successful": true,
+                "ErrorMessages": []
+            }
+        ]"""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            body=html,
+            status=200,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        # Test
+        assert client.turn_off([3]) is True
+        assert len(server.calls) == 1
+        body = server.calls[0].request.body.split("&")
+        assert "CommandType=2" in body
+        assert "ElementsClass=12" in body
+        assert "ElementsIndexes=3" in body
+        assert "sessionId=test" in body
+
+    def test_client_multiple_outputs(self, server):
+        """Should call the API and deactivate given outputs."""
+        html = """[
+            {
+                "Poller": {"Poller": 1, "Panel": 1},
+                "CommandId": 147,
+                "Successful": true,
+                "ErrorMessages": []
+            }
+        ]"""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            body=html,
+            status=200,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        # Test
+        assert client.turn_off([3, 4]) is True
+        assert len(server.calls) == 1
+        body = server.calls[0].request.body.split("&")
+        assert "CommandType=2" in body
+        assert "ElementsClass=12" in body
+        assert "ElementsIndexes=3" in body
+        assert "ElementsIndexes=4" in body
+        assert "sessionId=test" in body
+
+    def test_client_fails_missing_session(self, server):
+        """Should fail if a wrong access token is used."""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            status=401,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        client._lock.acquire()
+        # Test
+        with pytest.raises(InvalidToken):
+            client.turn_off([1])
+        assert len(server.calls) == 1
+
+    def test_client_fails_wrong_input(self, server):
+        """Should fail if a not existing output is used."""
+        html = """[
+            {
+                "Poller": {"Poller": 1, "Panel": 1},
+                "CommandId": 147,
+                "Successful": false,
+                "ErrorMessages": ["Command failed."]
+            }
+        ]"""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            body=html,
+            status=200,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        # Test
+        with pytest.raises(InvalidInput):
+            assert client.turn_off([9000])
+
+    def test_client_fails_unknown_error(self, server):
+        """Should fail if an unknown error happens."""
+        server.add(
+            responses.POST,
+            "https://example.com/api/panel/syncSendCommand",
+            body="Server Error",
+            status=500,
+        )
+        client = ElmoClient(base_url="https://example.com", domain="domain")
+        client._session_id = "test"
+        # Test
+        with pytest.raises(HTTPError):
+            client.turn_off([1])
+        assert len(server.calls) == 1
+
+
 def test_client_get_descriptions(server):
     """Should retrieve inputs/sectors descriptions."""
     html = """

@@ -452,6 +452,111 @@ class ElmoClient:
         _LOGGER.debug("Client | Including successful")
         return True
 
+    @require_session
+    def turn_on(self, outputs):
+        """Turn on passed outputs
+
+        This API provides the same effects as turning them
+        from "not active" to "active" on the E-Connect web UI.
+
+        Only outputs that are configured in the control panel with the option
+        "Manual Control" can be turned on
+        If the output is configured with "Require Authentication" flag in the control panel
+        can be turned on only if the panel is locked
+
+            client.turn_on([3])  # Turn on only output 3
+            client.turn_on([3, 5])  # Turn on output 3 and 5
+
+        Args:
+            outputs: list of outputs that must be turned on. If multiple items
+            are in the list, one requests is sent to turn on given outputs.
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the output has been turned on correctly.
+        """
+
+        # Exclude only selected inputs
+        _LOGGER.debug(f"Client | Turning on outputs: {outputs}")
+        payload = {
+            "CommandType": 1,
+            "ElementsClass": 12,
+            "ElementsIndexes": outputs,
+            "sessionId": self._session_id,
+        }
+
+        errors = []
+
+        # Send turn on request
+        response = self._session.post(self._router.send_command, data=payload)
+        response.raise_for_status()
+
+        # A not existing output returns 200 with a fail state
+        body = response.json()
+        _LOGGER.debug(f"Client | Turning on response: {body}")
+        if not body[0]["Successful"]:
+            errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_outputs = ",".join(str(x) for x in errors)
+            raise InvalidInput("Selected outputs don't exist: {}".format(invalid_outputs))
+
+        _LOGGER.debug("Client | Turning on output successful")
+        return True
+
+    @require_session
+    def turn_off(self, outputs):
+        """Turn off passed outputs
+
+        This API provides the same effects as turning them
+        from "active" to "not active" on the E-Connect web UI.
+
+        Only outputs that are configured in the control panel with the option
+        "Manual Control" can be turned off
+        If the output is configured with "Require Authentication" flag in the control panel
+        can be turned off only if the panel is locked
+
+            client.turn_off([3])  # Turn off only output 3
+            client.turn_off([3, 5])  # Turn off output 3 and 5
+
+        Args:
+            outputs: list of outputs that must be turned off. If multiple items
+            are in the list, one requests is sent to turn off given outputs.
+        Raises:
+            HTTPError: if there is an error raised by the API (not 2xx response).
+        Returns:
+            A boolean if the output has been turned off correctly.
+        """
+
+        # Turn off only selected outputs
+        _LOGGER.debug(f"Client | Turning off outputs: {outputs}")
+        payload = {
+            "CommandType": 2,
+            "ElementsClass": 12,
+            "ElementsIndexes": outputs,
+            "sessionId": self._session_id,
+        }
+
+        # Send turn off request
+        response = self._session.post(self._router.send_command, data=payload)
+        response.raise_for_status()
+
+        errors = []
+        # A not existing output returns 200 with a fail state
+        body = response.json()
+        _LOGGER.debug(f"Client | Turning off response: {body}")
+        if not body[0]["Successful"]:
+            errors.append(payload["ElementsIndexes"])
+
+        # Raise an exception if errors are detected
+        if errors:
+            invalid_outputs = ",".join(str(x) for x in errors)
+            raise InvalidInput("Selected outputs don't exist: {}".format(invalid_outputs))
+
+        _LOGGER.debug("Client | Turning off output successful")
+        return True
+
     @lru_cache(maxsize=1)
     @require_session
     def _get_descriptions(self):
