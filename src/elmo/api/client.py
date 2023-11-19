@@ -602,28 +602,8 @@ class ElmoClient:
             HTTPError: if there is an error raised by the API (not 2xx response).
             ParseError: if the response cannot be parsed because the format is unexpected.
         Returns:
-            A dict representing the raw query retrieved by the backend call. The structure is the following:
-                {
-                    'last_id': 3,
-                    'sectors': {
-                        0: {
-                            'id': 1,
-                            'index': 0,
-                            'element': 1,
-                            'excluded': False,
-                            'status': True,
-                            'name': 'S1 Living Room'
-                        },
-                        1: {
-                            'id': 2,
-                            'index': 1,
-                            'element': 2,
-                            'excluded': False,
-                            'status': True,
-                            'name': 'S2 Bedroom'
-                        },
-                    },
-                }
+            A dict representing the raw query retrieved by the backend call.
+
             `last_id`: is the last ID of the query, used to retrieve new state changes
             `sectors`: is the key you use to retrieve sectors if that was the query
             `inputs`: is the key you use to retrieve inputs if that was the query
