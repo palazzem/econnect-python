@@ -631,17 +631,14 @@ class ElmoClient:
         """
         # Query detection
         if query == q.SECTORS:
-            status = "Active"
             key_group = "sectors"
             endpoint = self._router.sectors
             _LOGGER.debug("Client | Querying sectors")
         elif query == q.INPUTS:
-            status = "Alarm"
             key_group = "inputs"
             endpoint = self._router.inputs
             _LOGGER.debug("Client | Querying inputs")
         elif query == q.OUTPUTS:
-            status = "Active"
             key_group = "outputs"
             endpoint = self._router.outputs
             _LOGGER.debug("Client | Querying outputs")
@@ -678,15 +675,38 @@ class ElmoClient:
                         # providing a sector/input/output that doesn't actually exist in the main unit.
                         # To handle this, we default the name to "Unknown" if its description
                         # isn't found in the cloud data to prevent KeyError.
-                        name = descriptions[query].get(entry["Index"], "Unknown")
                         item = {
                             "id": entry.get("Id"),
                             "index": entry.get("Index"),
                             "element": entry.get("Element"),
-                            "excluded": entry.get("Excluded", False),
-                            "status": entry.get(status, False),
-                            "name": name,
+                            "name": descriptions[query].get(entry["Index"], "Unknown"),
                         }
+
+                        if query == q.SECTORS:
+                            item.update(
+                                {
+                                    "activable": entry.get("Activable", False),
+                                    "status": entry.get("Active", False),
+                                }
+                            )
+                            _LOGGER.debug("Client | Querying sectors")
+                        elif query == q.INPUTS:
+                            item.update(
+                                {
+                                    "excluded": entry.get("Excluded", False),
+                                    "status": entry.get("Alarm", False),
+                                }
+                            )
+                            _LOGGER.debug("Client | Querying inputs")
+                        elif query == q.OUTPUTS:
+                            item.update(
+                                {
+                                    "donotrequireauthentication": entry.get("DoNotRequireAuthentication", False),
+                                    "controldeniedtousers": entry.get("ControlDeniedToUsers", False),
+                                    "status": entry.get("Active", False),
+                                }
+                            )
+                            _LOGGER.debug("Client | Querying outputs")
 
                         items[entry.get("Index")] = item
             except KeyError as err:
