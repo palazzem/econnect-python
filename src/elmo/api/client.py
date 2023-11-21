@@ -602,28 +602,8 @@ class ElmoClient:
             HTTPError: if there is an error raised by the API (not 2xx response).
             ParseError: if the response cannot be parsed because the format is unexpected.
         Returns:
-            A dict representing the raw query retrieved by the backend call. The structure is the following:
-                {
-                    'last_id': 3,
-                    'sectors': {
-                        0: {
-                            'id': 1,
-                            'index': 0,
-                            'element': 1,
-                            'excluded': False,
-                            'status': True,
-                            'name': 'S1 Living Room'
-                        },
-                        1: {
-                            'id': 2,
-                            'index': 1,
-                            'element': 2,
-                            'excluded': False,
-                            'status': True,
-                            'name': 'S2 Bedroom'
-                        },
-                    },
-                }
+            A dict representing the raw query retrieved by the backend call.
+
             `last_id`: is the last ID of the query, used to retrieve new state changes
             `sectors`: is the key you use to retrieve sectors if that was the query
             `inputs`: is the key you use to retrieve inputs if that was the query
@@ -631,17 +611,14 @@ class ElmoClient:
         """
         # Query detection
         if query == q.SECTORS:
-            status = "Active"
             key_group = "sectors"
             endpoint = self._router.sectors
             _LOGGER.debug("Client | Querying sectors")
         elif query == q.INPUTS:
-            status = "Alarm"
             key_group = "inputs"
             endpoint = self._router.inputs
             _LOGGER.debug("Client | Querying inputs")
         elif query == q.OUTPUTS:
-            status = "Active"
             key_group = "outputs"
             endpoint = self._router.outputs
             _LOGGER.debug("Client | Querying outputs")
@@ -678,15 +655,38 @@ class ElmoClient:
                         # providing a sector/input/output that doesn't actually exist in the main unit.
                         # To handle this, we default the name to "Unknown" if its description
                         # isn't found in the cloud data to prevent KeyError.
-                        name = descriptions[query].get(entry["Index"], "Unknown")
                         item = {
                             "id": entry.get("Id"),
                             "index": entry.get("Index"),
                             "element": entry.get("Element"),
-                            "excluded": entry.get("Excluded", False),
-                            "status": entry.get(status, False),
-                            "name": name,
+                            "name": descriptions[query].get(entry["Index"], "Unknown"),
                         }
+
+                        if query == q.SECTORS:
+                            item.update(
+                                {
+                                    "activable": entry.get("Activable", False),
+                                    "status": entry.get("Active", False),
+                                }
+                            )
+                            _LOGGER.debug("Client | Querying sectors")
+                        elif query == q.INPUTS:
+                            item.update(
+                                {
+                                    "excluded": entry.get("Excluded", False),
+                                    "status": entry.get("Alarm", False),
+                                }
+                            )
+                            _LOGGER.debug("Client | Querying inputs")
+                        elif query == q.OUTPUTS:
+                            item.update(
+                                {
+                                    "do_not_require_authentication": entry.get("DoNotRequireAuthentication", False),
+                                    "control_denied_to_users": entry.get("ControlDeniedToUsers", False),
+                                    "status": entry.get("Active", False),
+                                }
+                            )
+                            _LOGGER.debug("Client | Querying outputs")
 
                         items[entry.get("Index")] = item
             except KeyError as err:
