@@ -681,8 +681,8 @@ class ElmoClient:
                         elif query == q.OUTPUTS:
                             item.update(
                                 {
-                                    "donotrequireauthentication": entry.get("DoNotRequireAuthentication", False),
-                                    "controldeniedtousers": entry.get("ControlDeniedToUsers", False),
+                                    "do_not_require_authentication": entry.get("DoNotRequireAuthentication", False),
+                                    "control_denied_to_users": entry.get("ControlDeniedToUsers", False),
                                     "status": entry.get("Active", False),
                                 }
                             )
