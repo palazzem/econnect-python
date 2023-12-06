@@ -653,13 +653,16 @@ class ElmoClient:
                         # Address potential data inconsistency between cloud data and main unit.
                         # In some installations, they may be out of sync, resulting in the cloud
                         # providing a sector/input/output that doesn't actually exist in the main unit.
+                        # This case happens also when all inputs or sectors or outputs are used in the
+                        # main unit, but their strings are not synchronized with the cloud.
                         # To handle this, we default the name to "Unknown" if its description
                         # isn't found in the cloud data to prevent KeyError.
+                        description = descriptions.get(query, {})
                         item = {
                             "id": entry.get("Id"),
                             "index": entry.get("Index"),
                             "element": entry.get("Element"),
-                            "name": descriptions[query].get(entry["Index"], "Unknown"),
+                            "name": description.get(entry["Index"], "Unknown"),
                         }
 
                         if query == q.SECTORS:

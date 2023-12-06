@@ -1928,6 +1928,137 @@ def test_client_get_outputs_status(server, mocker):
     }
 
 
+def test_client_missing_sectors_strings(server, mocker):
+    """The query should return an empty list if outputs strings are not synchronized.
+    Regression test for: https://github.com/palazzem/ha-econnect-alarm/issues/115
+    """
+    html = """[
+       {
+           "Active": true,
+           "ActivePartial": false,
+           "Max": false,
+           "Activable": true,
+           "ActivablePartial": false,
+           "InUse": true,
+           "Id": 1,
+           "Index": 0,
+           "Element": 1,
+           "CommandId": 0,
+           "InProgress": false
+       }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/areas", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {}
+    # Test
+    sectors = client.query(query.SECTORS)
+    # Expected output
+    assert client._get_descriptions.called is True
+    assert len(server.calls) == 1
+    assert sectors == {
+        "last_id": 1,
+        "sectors": {
+            0: {
+                "element": 1,
+                "id": 1,
+                "index": 0,
+                "status": True,
+                "activable": True,
+                "name": "Unknown",
+            },
+        },
+    }
+
+
+def test_client_missing_inputs_strings(server, mocker):
+    """The query should return an empty list if outputs strings are not synchronized.
+    Regression test for: https://github.com/palazzem/ha-econnect-alarm/issues/115
+    """
+    html = """[
+       {
+           "Alarm": true,
+           "MemoryAlarm": false,
+           "Excluded": false,
+           "InUse": true,
+           "IsVideo": false,
+           "Id": 1,
+           "Index": 0,
+           "Element": 1,
+           "CommandId": 0,
+           "InProgress": false
+       }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/inputs", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {}
+    # Test
+    inputs = client.query(query.INPUTS)
+    # Expected output
+    assert client._get_descriptions.called is True
+    assert len(server.calls) == 1
+    assert inputs == {
+        "last_id": 1,
+        "inputs": {
+            0: {
+                "element": 1,
+                "id": 1,
+                "index": 0,
+                "status": True,
+                "excluded": False,
+                "name": "Unknown",
+            },
+        },
+    }
+
+
+def test_client_missing_outputs_strings(server, mocker):
+    """The query should return an empty list if outputs strings are not synchronized.
+    Regression test for: https://github.com/palazzem/ha-econnect-alarm/issues/115
+    """
+    html = """[
+       {
+        "Active": true,
+        "InUse": true,
+        "DoNotRequireAuthentication": true,
+        "ControlDeniedToUsers": false,
+        "Id": 400258,
+        "Index": 0,
+        "Element": 1,
+        "CommandId": 0,
+        "InProgress": false
+    }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/outputs", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {}
+    # Test
+    outputs = client.query(query.OUTPUTS)
+    # Expected output
+    assert client._get_descriptions.called is True
+    assert len(server.calls) == 1
+
+    assert outputs == {
+        "last_id": 400258,
+        "outputs": {
+            0: {
+                "control_denied_to_users": False,
+                "do_not_require_authentication": True,
+                "element": 1,
+                "id": 400258,
+                "index": 0,
+                "name": "Unknown",
+                "status": True,
+            },
+        },
+    }
+
+
 def test_client_get_sectors_missing_area(server, mocker):
     """Should set an Unknown `sector` name if the description is missing.
     Regression test for: https://github.com/palazzem/econnect-python/issues/91"""
