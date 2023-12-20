@@ -14,6 +14,7 @@ from .exceptions import (
     CredentialError,
     InvalidInput,
     InvalidSector,
+    InvalidToken,
     LockError,
     ParseError,
     QueryNotValid,
@@ -172,10 +173,12 @@ class ElmoClient:
         try:
             response.raise_for_status()
         except HTTPError as err:
-            # 403: Not possible to obtain the lock, probably because of a race condition
-            # with another application
+            # 403: Unable obtain the lock (race condition with another application)
             if err.response.status_code == 403:
                 raise LockError
+            # 401: The token has expired
+            if err.response.status_code == 401:
+                raise InvalidToken
             raise err
 
         # A wrong code returns 200 with a fail state

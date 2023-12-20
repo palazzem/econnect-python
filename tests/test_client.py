@@ -601,6 +601,19 @@ def test_client_lock_called_twice(server, mocker):
     assert len(server.calls) == 1
 
 
+def test_client_lock_invalid_token(server, mocker):
+    """Should raise a CodeError if the token is expired while calling Lock()."""
+    server.add(responses.POST, "https://example.com/api/panel/syncLogin", status=401)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "unlock")
+    # Test
+    with pytest.raises(InvalidToken):
+        with client.lock("test"):
+            pass
+    assert len(server.calls) == 1
+
+
 def test_client_lock_unknown_error(server, mocker):
     """Should raise an Exception for unknown status code."""
     server.add(
