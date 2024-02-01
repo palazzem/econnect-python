@@ -8,9 +8,8 @@ from elmo import query
 from elmo.api.client import ElmoClient
 from elmo.api.exceptions import (
     CodeError,
+    CommandError,
     CredentialError,
-    InvalidInput,
-    InvalidSector,
     InvalidToken,
     LockError,
     LockNotAcquired,
@@ -889,7 +888,7 @@ def test_client_arm_fails_wrong_sector(server):
     client._session_id = "test"
     client._lock.acquire()
     # Test
-    with pytest.raises(InvalidSector):
+    with pytest.raises(CommandError):
         assert client.arm([200])
 
 
@@ -1041,7 +1040,7 @@ def test_client_disarm_fails_wrong_sector(server):
     client._session_id = "test"
     client._lock.acquire()
     # Test
-    with pytest.raises(InvalidSector):
+    with pytest.raises(CommandError):
         assert client.disarm([200])
 
 
@@ -1172,7 +1171,7 @@ def test_client_include_fails_wrong_input(server):
     client._session_id = "test"
     client._lock.acquire()
     # Test
-    with pytest.raises(InvalidInput):
+    with pytest.raises(CommandError):
         assert client.include([9000])
 
 
@@ -1303,7 +1302,7 @@ def test_client_exclude_fails_wrong_input(server):
     client._session_id = "test"
     client._lock.acquire()
     # Test
-    with pytest.raises(InvalidInput):
+    with pytest.raises(CommandError):
         assert client.exclude([9000])
 
 
@@ -1414,7 +1413,7 @@ class TestTurnOn:
         client = ElmoClient(base_url="https://example.com", domain="domain")
         client._session_id = "test"
         # Test
-        with pytest.raises(InvalidInput):
+        with pytest.raises(CommandError):
             assert client.turn_on([9000])
 
     def test_client_fails_unknown_error(self, server):
@@ -1523,7 +1522,7 @@ class TestTurnOff:
         client = ElmoClient(base_url="https://example.com", domain="domain")
         client._session_id = "test"
         # Test
-        with pytest.raises(InvalidInput):
+        with pytest.raises(CommandError):
             assert client.turn_off([9000])
 
     def test_client_fails_unknown_error(self, server):
