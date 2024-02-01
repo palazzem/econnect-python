@@ -11,9 +11,8 @@ from ..utils import _camel_to_snake_case, _sanitize_session_id
 from .decorators import require_lock, require_session
 from .exceptions import (
     CodeError,
+    CommandError,
     CredentialError,
-    InvalidInput,
-    InvalidSector,
     InvalidToken,
     LockError,
     ParseError,
@@ -263,20 +262,14 @@ class ElmoClient:
         # Send the payload to arm sectors
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
-
-        errors = []
-        # A not existing sector returns 200 with a fail state
         body = response.json()
-        _LOGGER.debug(f"Client | Arming response: {body}")
+
+        # Errors returns 200 with "Successful == False" JSON key
         if not body[0]["Successful"]:
-            errors.append(payload["ElementsIndexes"])
+            _LOGGER.error(f"Client | Arming response: {body}")
+            raise CommandError
 
-        # Raise an exception if errors are detected
-        if errors:
-            invalid_sectors = ",".join(str(x) for x in errors)
-            raise InvalidSector("Selected sectors don't exist: {}".format(invalid_sectors))
-
-        _LOGGER.debug("Client | Arming successful")
+        _LOGGER.debug(f"Client | Arming successful with response: {body}")
         return True
 
     @require_session
@@ -323,20 +316,14 @@ class ElmoClient:
         # Send the payload to disarm sectors
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
-
-        errors = []
-        # A not existing sector returns 200 with a fail state
         body = response.json()
-        _LOGGER.debug(f"Client | Disarming response: {body}")
+
+        # Errors returns 200 with "Successful == False" JSON key
         if not body[0]["Successful"]:
-            errors.append(payload["ElementsIndexes"])
+            _LOGGER.error(f"Client | Disarming response: {body}")
+            raise CommandError
 
-        # Raise an exception if errors are detected
-        if errors:
-            invalid_sectors = ",".join(str(x) for x in errors)
-            raise InvalidSector("Selected sectors don't exist: {}".format(invalid_sectors))
-
-        _LOGGER.debug("Client | Disarming successful")
+        _LOGGER.debug(f"Client | Disarming successful with response: {body}")
         return True
 
     @require_session
@@ -392,7 +379,7 @@ class ElmoClient:
         # Raise an exception if errors are detected
         if errors:
             invalid_inputs = ",".join(str(x) for x in errors)
-            raise InvalidInput("Selected inputs don't exist: {}".format(invalid_inputs))
+            raise CommandError("Selected inputs don't exist: {}".format(invalid_inputs))
 
         _LOGGER.debug("Client | Excluding successful")
         return True
@@ -450,7 +437,7 @@ class ElmoClient:
         # Raise an exception if errors are detected
         if errors:
             invalid_inputs = ",".join(str(x) for x in errors)
-            raise InvalidInput("Selected inputs don't exist: {}".format(invalid_inputs))
+            raise CommandError("Selected inputs don't exist: {}".format(invalid_inputs))
 
         _LOGGER.debug("Client | Including successful")
         return True
@@ -488,24 +475,17 @@ class ElmoClient:
             "sessionId": self._session_id,
         }
 
-        errors = []
-
         # Send turn on request
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
-
-        # A not existing output returns 200 with a fail state
         body = response.json()
-        _LOGGER.debug(f"Client | Turning on response: {body}")
+
+        # Errors returns 200 with "Successful == False" JSON key
         if not body[0]["Successful"]:
-            errors.append(payload["ElementsIndexes"])
+            _LOGGER.error(f"Client | Turning on response: {body}")
+            raise CommandError
 
-        # Raise an exception if errors are detected
-        if errors:
-            invalid_outputs = ",".join(str(x) for x in errors)
-            raise InvalidInput("Selected outputs don't exist: {}".format(invalid_outputs))
-
-        _LOGGER.debug("Client | Turning on output successful")
+        _LOGGER.debug(f"Client | Turning on successful with response: {body}")
         return True
 
     @require_session
@@ -544,20 +524,14 @@ class ElmoClient:
         # Send turn off request
         response = self._session.post(self._router.send_command, data=payload)
         response.raise_for_status()
-
-        errors = []
-        # A not existing output returns 200 with a fail state
         body = response.json()
-        _LOGGER.debug(f"Client | Turning off response: {body}")
+
+        # Errors returns 200 with "Successful == False" JSON key
         if not body[0]["Successful"]:
-            errors.append(payload["ElementsIndexes"])
+            _LOGGER.error(f"Client | Turning on response: {body}")
+            raise CommandError
 
-        # Raise an exception if errors are detected
-        if errors:
-            invalid_outputs = ",".join(str(x) for x in errors)
-            raise InvalidInput("Selected outputs don't exist: {}".format(invalid_outputs))
-
-        _LOGGER.debug("Client | Turning off output successful")
+        _LOGGER.debug(f"Client | Turning on successful with response: {body}")
         return True
 
     @lru_cache(maxsize=1)

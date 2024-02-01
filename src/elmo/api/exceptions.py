@@ -70,13 +70,7 @@ class CodeError(APIException):
     default_message = "Digited panel code is not correct"
 
 
-class InvalidSector(APIException):
-    """Exception raised when armed/disarmed sector doesn't exist."""
+class CommandError(APIException):
+    """Exception raised when the API returns an error response after issuing a command."""
 
-    default_message = "Selected sector doesn't exist."
-
-
-class InvalidInput(APIException):
-    """Exception raised when included/excluded input doesn't exist."""
-
-    default_message = "Selected input doesn't exist."
+    default_message = "An error occurred while executing the command."
