@@ -1701,6 +1701,85 @@ def test_client_get_descriptions_error(server):
         client._get_descriptions()
 
 
+def test_client_query_panel_details(panel_details):
+    """Should query the system to retrieve panel details."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    client._panel = panel_details
+    # Test
+    details = client.query(query.PANEL)
+    # Expected output
+    assert details == {
+        "last_id": 0,
+        "panel": {
+            "description": "T-800 1.0.1",
+            "last_connection": "01/01/1984 13:27:28",
+            "last_disconnection": "01/10/1984 13:27:18",
+            "major": 1,
+            "minor": 0,
+            "source_ip": "10.0.0.1",
+            "connection_type": "EthernetWiFi",
+            "device_class": 92,
+            "revision": 1,
+            "build": 1,
+            "brand": 0,
+            "language": 0,
+            "areas": 4,
+            "sectors_per_area": 4,
+            "total_sectors": 16,
+            "inputs": 24,
+            "outputs": 24,
+            "operators": 64,
+            "sectors_in_use": [
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ],
+            "model": "T-800",
+            "login_without_user_id": True,
+            "additional_info_supported": 1,
+            "is_fire_panel": False,
+        },
+    }
+
+
+def test_client_query_panel_details_empty():
+    """Should return an empty dict if the login has not been completed."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    # Test
+    details = client.query(query.PANEL)
+    # Expected output
+    assert details == {
+        "last_id": 0,
+        "panel": {},
+    }
+
+
+def test_client_query_panel_details_deep_copy(panel_details):
+    """Should return a deep copy."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    client._panel = panel_details
+    # Test
+    details = client.query(query.PANEL)
+    # Expected output
+    assert details["panel"] is not client._panel
+
+
 def test_client_get_sectors_status(server, mocker):
     """Should query a Elmo system to retrieve sectors status."""
     html = """[

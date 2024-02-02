@@ -1,3 +1,4 @@
+import copy
 import logging
 from contextlib import contextmanager
 from functools import lru_cache
@@ -604,6 +605,12 @@ class ElmoClient:
         elif query == q.ALERTS:
             endpoint = self._router.status
             _LOGGER.debug("Client | Querying alerts")
+        elif query == q.PANEL:
+            _LOGGER.debug("Client | Querying panel details (cached)")
+            return {
+                "last_id": 0,
+                "panel": copy.deepcopy(self._panel) if self._panel else {},
+            }
         else:
             # Bail-out if the query is not recognized
             raise QueryNotValid()
