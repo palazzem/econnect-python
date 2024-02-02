@@ -1,8 +1,9 @@
 import pytest
 import responses
-from fixtures import responses as r
 
 from elmo.api.client import ElmoClient
+
+from .fixtures import responses as r
 
 
 @pytest.fixture(scope="function")

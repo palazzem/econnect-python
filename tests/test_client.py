@@ -18,6 +18,8 @@ from elmo.api.exceptions import (
 )
 from elmo.systems import ELMO_E_CONNECT, IESS_METRONET
 
+from .fixtures import responses as r
+
 
 def test_client_constructor_default():
     """Should build the client using the default values."""
@@ -69,24 +71,7 @@ def test_client_constructor_with_session_id():
 
 def test_client_auth_success(server):
     """Should authenticate with valid credentials."""
-    html = """
-        {
-            "SessionId": "00000000-0000-0000-0000-000000000000",
-            "Username": "test",
-            "Domain": "domain",
-            "Language": "en",
-            "IsActivated": true,
-            "IsConnected": true,
-            "IsLoggedIn": false,
-            "IsLoginInProgress": false,
-            "CanElevate": true,
-            "AccountId": 100,
-            "IsManaged": false,
-            "Redirect": false,
-            "IsElevation": false
-        }
-    """
-    server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    server.add(responses.GET, "https://example.com/api/login", body=r.LOGIN, status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     # Test
     assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
@@ -96,24 +81,7 @@ def test_client_auth_success(server):
 
 def test_client_debug_with_session_sanitized(server, caplog):
     """Ensure that the session ID is sanitized in debug mode."""
-    html = """
-        {
-            "SessionId": "00000000-0000-0000-0000-000000000000",
-            "Username": "test",
-            "Domain": "domain",
-            "Language": "en",
-            "IsActivated": true,
-            "IsConnected": true,
-            "IsLoggedIn": false,
-            "IsLoginInProgress": false,
-            "CanElevate": true,
-            "AccountId": 100,
-            "IsManaged": false,
-            "Redirect": false,
-            "IsElevation": false
-        }
-    """
-    server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    server.add(responses.GET, "https://example.com/api/login", body=r.LOGIN, status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     caplog.set_level(logging.DEBUG)
     # Test
