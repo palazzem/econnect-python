@@ -27,6 +27,7 @@ def test_client_constructor_default():
     assert client._router._base_url == "https://connect.elmospa.com"
     assert client._domain is None
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_econnect_system():
@@ -35,6 +36,7 @@ def test_client_econnect_system():
     assert client._router._base_url == "https://connect.elmospa.com"
     assert client._domain is None
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_metronet_system():
@@ -43,6 +45,7 @@ def test_client_metronet_system():
     assert client._router._base_url == "https://metronet.iessonline.com"
     assert client._domain is None
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_constructor_v03():
@@ -53,6 +56,7 @@ def test_client_constructor_v03():
     assert client._router._base_url == "https://example.com"
     assert client._domain == "domain"
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_constructor():
@@ -61,6 +65,7 @@ def test_client_constructor():
     assert client._router._base_url == "https://example.com"
     assert client._domain == "domain"
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_constructor_with_session_id():
@@ -89,6 +94,84 @@ def test_client_debug_with_session_sanitized(server, caplog):
     assert "Authentication successful: 00000000-XXXX-XXXX-XXXX-XXXXXXXXXXXX" in caplog.text
 
 
+def test_client_auth_stores_panel_details(server):
+    """Should store panel details after login is successful."""
+    server.add(responses.GET, "https://example.com/api/login", body=r.LOGIN, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
+    client.auth("test", "test")
+    assert client._panel == {
+        "description": "T-800 1.0.1",
+        "last_connection": "01/01/1984 13:27:28",
+        "last_disconnection": "01/10/1984 13:27:18",
+        "major": 1,
+        "minor": 0,
+        "source_ip": "10.0.0.1",
+        "connection_type": "EthernetWiFi",
+        "device_class": 92,
+        "revision": 1,
+        "build": 1,
+        "brand": 0,
+        "language": 0,
+        "areas": 4,
+        "sectors_per_area": 4,
+        "total_sectors": 16,
+        "inputs": 24,
+        "outputs": 24,
+        "operators": 64,
+        "sectors_in_use": [
+            True,
+            True,
+            True,
+            True,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+        ],
+        "model": "T-800",
+        "login_without_user_id": True,
+        "additional_info_supported": 1,
+        "is_fire_panel": False,
+    }
+    assert len(server.calls) == 1
+
+
+def test_client_auth_no_panel_details(server):
+    """Should be resilient if the `Panel` key is missing."""
+    html = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Username": "test",
+            "Domain": "domain",
+            "Language": "en",
+            "IsActivated": true,
+            "IsConnected": true,
+            "IsLoggedIn": false,
+            "IsLoginInProgress": false,
+            "CanElevate": true,
+            "AccountId": 100,
+            "IsManaged": false,
+            "Redirect": false,
+            "IsElevation": false
+        }
+    """
+    server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
+    client.auth("test", "test")
+    assert client._panel == {}
+    assert len(server.calls) == 1
+
+
 def test_client_auth_forbidden(server):
     """Should raise an exception if credentials are not valid."""
     server.add(
@@ -102,6 +185,7 @@ def test_client_auth_forbidden(server):
     with pytest.raises(CredentialError):
         client.auth("test", "test")
     assert client._session_id is None
+    assert client._panel is None
     assert len(server.calls) == 1
 
 
@@ -113,6 +197,7 @@ def test_client_auth_unknown_error(server):
     with pytest.raises(HTTPError):
         client.auth("test", "test")
     assert client._session_id is None
+    assert client._panel is None
     assert len(server.calls) == 1
 
 

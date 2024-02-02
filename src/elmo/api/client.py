@@ -44,6 +44,7 @@ class ElmoClient:
         self._domain = domain
         self._session = Session()
         self._session_id = session_id
+        self._panel = None
         self._lock = Lock()
         # Debug
         _LOGGER.debug(f"Client | Router: {self._router._base_url}")
@@ -77,9 +78,10 @@ class ElmoClient:
                 raise CredentialError
             raise err
 
-        # Store the session_id
+        # Store the session_id and the panel details (if available)
         data = response.json()
         self._session_id = data["SessionId"]
+        self._panel = {_camel_to_snake_case(k): v for k, v in data.get("Panel", {}).items()}
 
         # Register the redirect URL and try the authentication again
         if data["Redirect"]:
