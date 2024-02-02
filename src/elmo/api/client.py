@@ -1,3 +1,4 @@
+import copy
 import logging
 from contextlib import contextmanager
 from functools import lru_cache
@@ -44,6 +45,7 @@ class ElmoClient:
         self._domain = domain
         self._session = Session()
         self._session_id = session_id
+        self._panel = None
         self._lock = Lock()
         # Debug
         _LOGGER.debug(f"Client | Router: {self._router._base_url}")
@@ -77,9 +79,10 @@ class ElmoClient:
                 raise CredentialError
             raise err
 
-        # Store the session_id
+        # Store the session_id and the panel details (if available)
         data = response.json()
         self._session_id = data["SessionId"]
+        self._panel = {_camel_to_snake_case(k): v for k, v in data.get("Panel", {}).items()}
 
         # Register the redirect URL and try the authentication again
         if data["Redirect"]:
@@ -602,6 +605,12 @@ class ElmoClient:
         elif query == q.ALERTS:
             endpoint = self._router.status
             _LOGGER.debug("Client | Querying alerts")
+        elif query == q.PANEL:
+            _LOGGER.debug("Client | Querying panel details (cached)")
+            return {
+                "last_id": 0,
+                "panel": copy.deepcopy(self._panel) if self._panel else {},
+            }
         else:
             # Bail-out if the query is not recognized
             raise QueryNotValid()

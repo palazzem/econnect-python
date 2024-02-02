@@ -1,8 +1,9 @@
 import pytest
 import responses
-from fixtures import responses as r
 
 from elmo.api.client import ElmoClient
+
+from .fixtures import responses as r
 
 
 @pytest.fixture(scope="function")
@@ -31,6 +32,53 @@ def client():
         server.add(responses.POST, "https://example.com/api/inputs", body=r.INPUTS, status=200)
         server.add(responses.POST, "https://example.com/api/outputs", body=r.OUTPUTS, status=200)
         yield client
+
+
+@pytest.fixture(scope="function")
+def panel_details():
+    """Returns the panel details object."""
+    return {
+        "description": "T-800 1.0.1",
+        "last_connection": "01/01/1984 13:27:28",
+        "last_disconnection": "01/10/1984 13:27:18",
+        "major": 1,
+        "minor": 0,
+        "source_ip": "10.0.0.1",
+        "connection_type": "EthernetWiFi",
+        "device_class": 92,
+        "revision": 1,
+        "build": 1,
+        "brand": 0,
+        "language": 0,
+        "areas": 4,
+        "sectors_per_area": 4,
+        "total_sectors": 16,
+        "inputs": 24,
+        "outputs": 24,
+        "operators": 64,
+        "sectors_in_use": [
+            True,
+            True,
+            True,
+            True,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+        ],
+        "model": "T-800",
+        "login_without_user_id": True,
+        "additional_info_supported": 1,
+        "is_fire_panel": False,
+    }
 
 
 @pytest.fixture

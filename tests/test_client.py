@@ -18,6 +18,8 @@ from elmo.api.exceptions import (
 )
 from elmo.systems import ELMO_E_CONNECT, IESS_METRONET
 
+from .fixtures import responses as r
+
 
 def test_client_constructor_default():
     """Should build the client using the default values."""
@@ -25,6 +27,7 @@ def test_client_constructor_default():
     assert client._router._base_url == "https://connect.elmospa.com"
     assert client._domain is None
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_econnect_system():
@@ -33,6 +36,7 @@ def test_client_econnect_system():
     assert client._router._base_url == "https://connect.elmospa.com"
     assert client._domain is None
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_metronet_system():
@@ -41,6 +45,7 @@ def test_client_metronet_system():
     assert client._router._base_url == "https://metronet.iessonline.com"
     assert client._domain is None
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_constructor_v03():
@@ -51,6 +56,7 @@ def test_client_constructor_v03():
     assert client._router._base_url == "https://example.com"
     assert client._domain == "domain"
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_constructor():
@@ -59,6 +65,7 @@ def test_client_constructor():
     assert client._router._base_url == "https://example.com"
     assert client._domain == "domain"
     assert client._session_id is None
+    assert client._panel is None
 
 
 def test_client_constructor_with_session_id():
@@ -69,24 +76,7 @@ def test_client_constructor_with_session_id():
 
 def test_client_auth_success(server):
     """Should authenticate with valid credentials."""
-    html = """
-        {
-            "SessionId": "00000000-0000-0000-0000-000000000000",
-            "Username": "test",
-            "Domain": "domain",
-            "Language": "en",
-            "IsActivated": true,
-            "IsConnected": true,
-            "IsLoggedIn": false,
-            "IsLoginInProgress": false,
-            "CanElevate": true,
-            "AccountId": 100,
-            "IsManaged": false,
-            "Redirect": false,
-            "IsElevation": false
-        }
-    """
-    server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
+    server.add(responses.GET, "https://example.com/api/login", body=r.LOGIN, status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
     # Test
     assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
@@ -96,6 +86,67 @@ def test_client_auth_success(server):
 
 def test_client_debug_with_session_sanitized(server, caplog):
     """Ensure that the session ID is sanitized in debug mode."""
+    server.add(responses.GET, "https://example.com/api/login", body=r.LOGIN, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    caplog.set_level(logging.DEBUG)
+    # Test
+    assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
+    assert "Authentication successful: 00000000-XXXX-XXXX-XXXX-XXXXXXXXXXXX" in caplog.text
+
+
+def test_client_auth_stores_panel_details(server):
+    """Should store panel details after login is successful."""
+    server.add(responses.GET, "https://example.com/api/login", body=r.LOGIN, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    # Test
+    client.auth("test", "test")
+    assert client._panel == {
+        "description": "T-800 1.0.1",
+        "last_connection": "01/01/1984 13:27:28",
+        "last_disconnection": "01/10/1984 13:27:18",
+        "major": 1,
+        "minor": 0,
+        "source_ip": "10.0.0.1",
+        "connection_type": "EthernetWiFi",
+        "device_class": 92,
+        "revision": 1,
+        "build": 1,
+        "brand": 0,
+        "language": 0,
+        "areas": 4,
+        "sectors_per_area": 4,
+        "total_sectors": 16,
+        "inputs": 24,
+        "outputs": 24,
+        "operators": 64,
+        "sectors_in_use": [
+            True,
+            True,
+            True,
+            True,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+            False,
+        ],
+        "model": "T-800",
+        "login_without_user_id": True,
+        "additional_info_supported": 1,
+        "is_fire_panel": False,
+    }
+    assert len(server.calls) == 1
+
+
+def test_client_auth_no_panel_details(server):
+    """Should be resilient if the `Panel` key is missing."""
     html = """
         {
             "SessionId": "00000000-0000-0000-0000-000000000000",
@@ -115,10 +166,10 @@ def test_client_debug_with_session_sanitized(server, caplog):
     """
     server.add(responses.GET, "https://example.com/api/login", body=html, status=200)
     client = ElmoClient(base_url="https://example.com", domain="domain")
-    caplog.set_level(logging.DEBUG)
     # Test
-    assert client.auth("test", "test") == "00000000-0000-0000-0000-000000000000"
-    assert "Authentication successful: 00000000-XXXX-XXXX-XXXX-XXXXXXXXXXXX" in caplog.text
+    client.auth("test", "test")
+    assert client._panel == {}
+    assert len(server.calls) == 1
 
 
 def test_client_auth_forbidden(server):
@@ -134,6 +185,7 @@ def test_client_auth_forbidden(server):
     with pytest.raises(CredentialError):
         client.auth("test", "test")
     assert client._session_id is None
+    assert client._panel is None
     assert len(server.calls) == 1
 
 
@@ -145,6 +197,7 @@ def test_client_auth_unknown_error(server):
     with pytest.raises(HTTPError):
         client.auth("test", "test")
     assert client._session_id is None
+    assert client._panel is None
     assert len(server.calls) == 1
 
 
@@ -1646,6 +1699,85 @@ def test_client_get_descriptions_error(server):
     # Test
     with pytest.raises(HTTPError):
         client._get_descriptions()
+
+
+def test_client_query_panel_details(panel_details):
+    """Should query the system to retrieve panel details."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    client._panel = panel_details
+    # Test
+    details = client.query(query.PANEL)
+    # Expected output
+    assert details == {
+        "last_id": 0,
+        "panel": {
+            "description": "T-800 1.0.1",
+            "last_connection": "01/01/1984 13:27:28",
+            "last_disconnection": "01/10/1984 13:27:18",
+            "major": 1,
+            "minor": 0,
+            "source_ip": "10.0.0.1",
+            "connection_type": "EthernetWiFi",
+            "device_class": 92,
+            "revision": 1,
+            "build": 1,
+            "brand": 0,
+            "language": 0,
+            "areas": 4,
+            "sectors_per_area": 4,
+            "total_sectors": 16,
+            "inputs": 24,
+            "outputs": 24,
+            "operators": 64,
+            "sectors_in_use": [
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ],
+            "model": "T-800",
+            "login_without_user_id": True,
+            "additional_info_supported": 1,
+            "is_fire_panel": False,
+        },
+    }
+
+
+def test_client_query_panel_details_empty():
+    """Should return an empty dict if the login has not been completed."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    # Test
+    details = client.query(query.PANEL)
+    # Expected output
+    assert details == {
+        "last_id": 0,
+        "panel": {},
+    }
+
+
+def test_client_query_panel_details_deep_copy(panel_details):
+    """Should return a deep copy."""
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    client._panel = panel_details
+    # Test
+    details = client.query(query.PANEL)
+    # Expected output
+    assert details["panel"] is not client._panel
 
 
 def test_client_get_sectors_status(server, mocker):
