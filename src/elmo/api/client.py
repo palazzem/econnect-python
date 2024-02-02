@@ -153,13 +153,15 @@ class ElmoClient:
 
     @contextmanager
     @require_session
-    def lock(self, code):
+    def lock(self, code, user_id=1):
         """Context manager to obtain a system lock. The alerting system allows
         only one user at a time and obtaining the lock is mandatory. When the
         context manager is closed, the lock is automatically released.
 
         Args:
             code: the alarm code used to obtain the lock.
+            user_id: the `userId` used by some main units. This value is optional and
+                should be used only if the main unit requires it. The default value is 1.
         Raises:
             CodeError: if used `code` is not valid.
             LockError: if the server is refusing to assign the lock. It could mean
@@ -169,7 +171,8 @@ class ElmoClient:
         Returns:
             A client instance with an acquired lock.
         """
-        payload = {"userId": 1, "password": code, "sessionId": self._session_id}
+        # Main units that do not require a userId param, expects userId to be "1"
+        payload = {"userId": user_id, "password": code, "sessionId": self._session_id}
         response = self._session.post(self._router.lock, data=payload)
 
         try:

@@ -602,7 +602,7 @@ class TestClientPollParseError:
 
 
 def test_client_lock(server, mocker):
-    """Should acquire a lock if credentials are properly provided."""
+    """Should acquire the lock, sending `userId=1` as a default."""
     html = """[
         {
             "Poller": {"Poller": 1, "Panel": 1},
@@ -618,6 +618,27 @@ def test_client_lock(server, mocker):
     with client.lock("test"):
         assert not client._lock.acquire(False)
     assert len(server.calls) == 1
+    assert server.calls[0].request.body == "userId=1&password=test&sessionId=test"
+
+
+def test_client_lock_with_user_id(server, mocker):
+    """Should acquire the lock sending a user-defined `userId`."""
+    html = """[
+        {
+            "Poller": {"Poller": 1, "Panel": 1},
+            "CommandId": 5,
+            "Successful": true
+        }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/panel/syncLogin", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "unlock")
+    # Test
+    with client.lock("test", user_id="001"):
+        assert not client._lock.acquire(False)
+    assert len(server.calls) == 1
+    assert server.calls[0].request.body == "userId=001&password=test&sessionId=test"
 
 
 def test_client_lock_wrong_code(server, mocker):
