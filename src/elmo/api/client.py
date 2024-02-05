@@ -8,6 +8,7 @@ from requests import Session
 from requests.exceptions import HTTPError
 
 from .. import query as q
+from ..__about__ import __version__
 from ..utils import _camel_to_snake_case, _sanitize_session_id
 from .decorators import require_lock, require_session
 from .exceptions import (
@@ -48,6 +49,7 @@ class ElmoClient:
         self._panel = None
         self._lock = Lock()
         # Debug
+        _LOGGER.debug(f"Client | Library version: {__version__}")
         _LOGGER.debug(f"Client | Router: {self._router._base_url}")
         _LOGGER.debug(f"Client | Domain: {self._domain}")
 
@@ -174,6 +176,7 @@ class ElmoClient:
         # Main units that do not require a userId param, expects userId to be "1"
         payload = {"userId": user_id, "password": code, "sessionId": self._session_id}
         response = self._session.post(self._router.lock, data=payload)
+        _LOGGER.debug(f"Client | Lock response: {response.text}")
 
         try:
             response.raise_for_status()
@@ -192,7 +195,7 @@ class ElmoClient:
             raise CodeError
 
         self._lock.acquire()
-        _LOGGER.debug(f"Client | Lock acquired with response {body}")
+        _LOGGER.debug("Client | Lock successful")
         try:
             yield self
         finally:
@@ -216,9 +219,10 @@ class ElmoClient:
         """
         payload = {"sessionId": self._session_id}
         response = self._session.post(self._router.unlock, data=payload)
+        _LOGGER.debug(f"Client | Unlock response: {response.text}")
         response.raise_for_status()
 
-        _LOGGER.debug(f"Client | Lock released with response {response.text}")
+        _LOGGER.debug("Client | Unlock successful")
         # Release the lock only in case of success, so that if it fails
         # the owner of the lock can properly unlock the system again
         # (maybe with a retry)
@@ -267,15 +271,15 @@ class ElmoClient:
 
         # Send the payload to arm sectors
         response = self._session.post(self._router.send_command, data=payload)
+        _LOGGER.debug(f"Client | Arm response: {response.text}")
         response.raise_for_status()
         body = response.json()
 
         # Errors returns 200 with "Successful == False" JSON key
         if not body[0]["Successful"]:
-            _LOGGER.error(f"Client | Arming response: {body}")
             raise CommandError
 
-        _LOGGER.debug(f"Client | Arming successful with response: {body}")
+        _LOGGER.debug("Client | Arm successful")
         return True
 
     @require_session
@@ -321,15 +325,15 @@ class ElmoClient:
 
         # Send the payload to disarm sectors
         response = self._session.post(self._router.send_command, data=payload)
+        _LOGGER.debug(f"Client | Disarm response: {response.text}")
         response.raise_for_status()
         body = response.json()
 
         # Errors returns 200 with "Successful == False" JSON key
         if not body[0]["Successful"]:
-            _LOGGER.error(f"Client | Disarming response: {body}")
             raise CommandError
 
-        _LOGGER.debug(f"Client | Disarming successful with response: {body}")
+        _LOGGER.debug("Client | Disarm successful")
         return True
 
     @require_session
