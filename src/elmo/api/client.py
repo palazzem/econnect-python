@@ -15,6 +15,7 @@ from .exceptions import (
     CodeError,
     CommandError,
     CredentialError,
+    DeviceDisconnectedError,
     InvalidToken,
     LockError,
     ParseError,
@@ -622,8 +623,14 @@ class ElmoClient:
             # Bail-out if the query is not recognized
             raise QueryNotValid()
 
-        response = self._session.post(endpoint, data={"sessionId": self._session_id})
-        response.raise_for_status()
+        try:
+            response = self._session.post(endpoint, data={"sessionId": self._session_id})
+            response.raise_for_status()
+        except HTTPError as err:
+            # Handle the case when the device is disconnected
+            if err.response.status_code == 403 and "Centrale non connessa" in err.response.text:
+                raise DeviceDisconnectedError
+            raise err
 
         if query in [q.SECTORS, q.INPUTS, q.OUTPUTS]:
             # Retrieve description or use the cache

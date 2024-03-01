@@ -10,6 +10,7 @@ from elmo.api.exceptions import (
     CodeError,
     CommandError,
     CredentialError,
+    DeviceDisconnectedError,
     InvalidToken,
     LockError,
     LockNotAcquired,
@@ -2411,6 +2412,22 @@ def test_client_query_invalid_response(server, mocker):
     mocker.patch.object(client, "_get_descriptions")
     # Test
     with pytest.raises(ParseError):
+        client.query(query.SECTORS)
+
+
+def test_client_query_unit_disconnected(server, mocker):
+    # Ensure that the client catches and raises an exception when the unit is disconnected
+    server.add(
+        responses.POST,
+        "https://example.com/api/areas",
+        body='"Centrale non connessa"',
+        status=403,
+    )
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    # Test
+    with pytest.raises(DeviceDisconnectedError):
         client.query(query.SECTORS)
 
 
