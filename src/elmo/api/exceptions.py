@@ -79,4 +79,4 @@ class CommandError(APIException):
 class DeviceDisconnectedError(APIException):
     """Exception raised when the device is disconnected."""
 
-    default_message = "Unable to execute commands. Device is disconnected."
+    default_message = "Device is disconnected"
