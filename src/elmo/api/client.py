@@ -86,6 +86,7 @@ class ElmoClient:
         data = response.json()
         self._session_id = data["SessionId"]
         self._panel = {_camel_to_snake_case(k): v for k, v in data.get("Panel", {}).items()}
+        _LOGGER.debug(f"Client | Panel data: {self._panel}")
 
         # Register the redirect URL and try the authentication again
         if data["Redirect"]:
