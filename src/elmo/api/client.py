@@ -9,6 +9,7 @@ from requests.exceptions import HTTPError
 
 from .. import query as q
 from ..__about__ import __version__
+from ..systems import ELMO_E_CONNECT
 from ..utils import _camel_to_snake_case, _sanitize_session_id
 from .decorators import require_lock, require_session
 from .exceptions import (
@@ -49,10 +50,21 @@ class ElmoClient:
         self._session_id = session_id
         self._panel = None
         self._lock = Lock()
+
+        # Conditionally add required headers
+        if self._router._base_url == ELMO_E_CONNECT:
+            self._session.headers.update(
+                {
+                    "Referer": "https://webservice.elmospa.com/",
+                    "Origin": "https://webservice.elmospa.com",
+                }
+            )
+
         # Debug
         _LOGGER.debug(f"Client | Library version: {__version__}")
         _LOGGER.debug(f"Client | Router: {self._router._base_url}")
         _LOGGER.debug(f"Client | Domain: {self._domain}")
+        _LOGGER.debug(f"Client | HTTP Headers: {self._session.headers}")
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses

@@ -2657,3 +2657,16 @@ def test_client_query_last_id_value_error_empty(server, mocker):
     # Test
     inputs = client.query(query.INPUTS)
     assert inputs["last_id"] == 0
+
+
+def test_client_constructor_sets_required_headers():
+    """Should set required Referer and Origin headers during initialization otherwise
+    polling will fail. Metronet systems do not require these headers.
+    Regression test for: https://github.com/palazzem/econnect-python/issues/158
+    """
+    client_econnect = ElmoClient(base_url=ELMO_E_CONNECT)
+    client_metronet = ElmoClient(base_url=IESS_METRONET)
+    assert client_econnect._session.headers["Referer"] == "https://webservice.elmospa.com/"
+    assert client_econnect._session.headers["Origin"] == "https://webservice.elmospa.com"
+    assert "Referer" not in client_metronet._session.headers
+    assert "Origin" not in client_metronet._session.headers
