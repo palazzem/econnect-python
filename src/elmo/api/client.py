@@ -643,8 +643,17 @@ class ElmoClient:
             entries = response.json()
             _LOGGER.debug(f"Client | Query response: {entries}")
             items = {}
+
+            try:
+                # Determine the last_id by finding the maximum Id in the list
+                last_id = max(entry["Id"] for entry in entries)
+            except (TypeError, ValueError) as err:
+                _LOGGER.error("Client | Could not determine max Id from entries, defaulting to 0.")
+                _LOGGER.debug(f"Client | Error: {err} | Entries: {entries}")
+                last_id = 0
+
             result = {
-                "last_id": entries[-1]["Id"],
+                "last_id": last_id,
                 key_group: items,
             }
             try:

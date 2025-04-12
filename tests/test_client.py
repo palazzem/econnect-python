@@ -2562,3 +2562,98 @@ def test_client_get_alerts_missing_data(server):
     with pytest.raises(ParseError):
         client.query(query.ALERTS)
     assert len(server.calls) == 1
+
+
+def test_client_query_last_id_unordered(server, mocker):
+    """Should determine the last_id correctly even if entries are unordered.
+    Regression test for: https://github.com/palazzem/econnect-python/issues/154
+    """
+    html = """[
+       {
+           "Alarm": true,
+           "MemoryAlarm": false,
+           "Excluded": false,
+           "InUse": true,
+           "IsVideo": false,
+           "Id": 3,
+           "Index": 0,
+           "Element": 1,
+           "CommandId": 0,
+           "InProgress": false
+       },
+       {
+           "Alarm": false,
+           "MemoryAlarm": false,
+           "Excluded": true,
+           "InUse": true,
+           "IsVideo": false,
+           "Id": 5,
+           "Index": 2,
+           "Element": 3,
+           "CommandId": 0,
+           "InProgress": false
+       },
+       {
+           "Alarm": true,
+           "MemoryAlarm": false,
+           "Excluded": false,
+           "InUse": true,
+           "IsVideo": false,
+           "Id": 2,
+           "Index": 1,
+           "Element": 2,
+           "CommandId": 0,
+           "InProgress": false
+       }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/inputs", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {
+        10: {0: "Input 1", 1: "Input 2", 2: "Input 3"},
+    }
+    # Test
+    inputs = client.query(query.INPUTS)
+    assert inputs["last_id"] == 5
+
+
+def test_client_query_last_id_type_error(server, mocker):
+    """Should default last_id to 0 if a TypeError occurs during max()."""
+    html = """[
+       {
+           "Alarm": true,
+           "InUse": true,
+           "Id": "not-an-int",
+           "Index": 0,
+           "Element": 1
+       },
+       {
+           "Alarm": false,
+           "InUse": true,
+           "Id": 2,
+           "Index": 1,
+           "Element": 2
+       }
+    ]"""
+    server.add(responses.POST, "https://example.com/api/inputs", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {10: {0: "Input 1", 1: "Input 2"}}
+    # Test
+    inputs = client.query(query.INPUTS)
+    assert inputs["last_id"] == 0
+
+
+def test_client_query_last_id_value_error_empty(server, mocker):
+    """Should default last_id to 0 if the entries list is empty (ValueError)."""
+    html = """[]"""
+    server.add(responses.POST, "https://example.com/api/inputs", body=html, status=200)
+    client = ElmoClient(base_url="https://example.com", domain="domain")
+    client._session_id = "test"
+    mocker.patch.object(client, "_get_descriptions")
+    client._get_descriptions.return_value = {}
+    # Test
+    inputs = client.query(query.INPUTS)
+    assert inputs["last_id"] == 0
