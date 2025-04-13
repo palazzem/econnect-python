@@ -2,6 +2,8 @@ import logging
 import re
 from functools import lru_cache
 
+from .api.exceptions import ParseError
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -58,3 +60,29 @@ def _camel_to_snake_case(name):
     name = name.lower()
 
     return name
+
+
+def extract_session_id_from_html(html_content: str) -> str:
+    """Extract the session ID from the HTML source containing the specific JavaScript block.
+
+    This function uses a raw string (r"") for the regex pattern to avoid escaping issues.
+    The regex pattern is designed to find "var sessionId = '...'" and capture the ID within the quotes.
+    It captures any character except the closing single quote.
+
+    Args:
+        html_content (str): The HTML source code as a string.
+
+    Returns:
+        str: The extracted session ID string.
+
+    Raises:
+        ParseError: If the session ID is not found in the HTML content.
+    """
+    pattern = r"var\s+sessionId\s*=\s*'([^']+)'"
+    match = re.search(pattern, html_content)
+    if match:
+        return match.group(1)
+    else:
+        _LOGGER.error("Client | Session ID not found in e-Connect status page.")
+        _LOGGER.debug("Client | HTML content: %s", html_content)
+        raise ParseError("Session ID not found in e-Connect status page.")

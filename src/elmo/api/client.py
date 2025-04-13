@@ -9,7 +9,12 @@ from requests.exceptions import HTTPError
 
 from .. import query as q
 from ..__about__ import __version__
-from ..utils import _camel_to_snake_case, _sanitize_session_id
+from ..systems import ELMO_E_CONNECT
+from ..utils import (
+    _camel_to_snake_case,
+    _sanitize_session_id,
+    extract_session_id_from_html,
+)
 from .decorators import require_lock, require_session
 from .exceptions import (
     CodeError,
@@ -49,6 +54,7 @@ class ElmoClient:
         self._session_id = session_id
         self._panel = None
         self._lock = Lock()
+
         # Debug
         _LOGGER.debug(f"Client | Library version: {__version__}")
         _LOGGER.debug(f"Client | Router: {self._router._base_url}")
@@ -56,7 +62,7 @@ class ElmoClient:
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses
-        the Authentication API.
+        the Authentication API, or the web login form if the base_url is Elmo E-Connect.
 
         Args:
             username: the Username used for the authentication.
@@ -69,11 +75,28 @@ class ElmoClient:
             the `ElmoClient` instance.
         """
         try:
+            if self._router._base_url == ELMO_E_CONNECT:
+                # Web login is required for Elmo E-Connect because, at the moment, the
+                # e-Connect Cloud API login does not register the client session in the backend.
+                # This prevents the client from attaching to server events (e.g. long polling updates).
+                web_login_url = f"https://webservice.elmospa.com/{self._domain}"
+                payload = {
+                    "IsDisableAccountCreation": "True",
+                    "IsAllowThemeChange": "True",
+                    "UserName": username,
+                    "Password": password,
+                    "RememberMe": "false",
+                }
+                _LOGGER.debug("Client | e-Connect Web Login detected")
+                web_response = self._session.post(web_login_url, data=payload)
+                web_response.raise_for_status()
+
+            # API login
             payload = {"username": username, "password": password}
             if self._domain is not None:
                 payload["domain"] = self._domain
 
-            _LOGGER.debug("Client | Client Authentication")
+            _LOGGER.debug("Client | API Authentication")
             response = self._session.get(self._router.auth, params=payload)
             response.raise_for_status()
         except HTTPError as err:
@@ -84,8 +107,11 @@ class ElmoClient:
 
         # Store the session_id and the panel details (if available)
         data = response.json()
-        self._session_id = data["SessionId"]
         self._panel = {_camel_to_snake_case(k): v for k, v in data.get("Panel", {}).items()}
+        if self._router._base_url == ELMO_E_CONNECT:
+            self._session_id = extract_session_id_from_html(web_response.text)
+        else:
+            self._session_id = data["SessionId"]
 
         # Register the redirect URL and try the authentication again
         if data["Redirect"]:
