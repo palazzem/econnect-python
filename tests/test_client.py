@@ -348,6 +348,53 @@ def test_client_poll(server):
     assert "ConnectionStatus=1" in body
 
 
+def test_client_auth_econnect_web_login(server):
+    """Web login should be used when accessing with e-Connect.
+    Regression test: https://github.com/palazzem/econnect-python/issues/158
+    """
+    server.add(responses.POST, "https://webservice.elmospa.com/domain", body=r.STATUS_PAGE, status=200)
+    server.add(responses.GET, f"{ELMO_E_CONNECT}/api/login", body=r.LOGIN, status=200)
+    client = ElmoClient(base_url=ELMO_E_CONNECT, domain="domain")
+    # Test
+    client.auth("test", "test")
+    request_body = dict(item.split("=") for item in server.calls[0].request.body.split("&"))
+    assert len(server.calls) == 2
+    assert client._session_id == "f8h23b4e-7a9f-4d3f-9b08-2769263ee33c"
+    assert request_body == {
+        "IsDisableAccountCreation": "True",
+        "IsAllowThemeChange": "True",
+        "UserName": "test",
+        "Password": "test",
+        "RememberMe": "false",
+    }
+
+
+def test_client_auth_econnect_web_login_metronet(server):
+    """Web login should NOT be used when accessing with Metronet.
+    Regression test: https://github.com/palazzem/econnect-python/issues/158
+    """
+    server.add(responses.GET, f"{IESS_METRONET}/api/login", body=r.LOGIN, status=200)
+    client = ElmoClient(base_url=IESS_METRONET, domain="domain")
+    # Test
+    client.auth("test", "test")
+    assert client._session_id == "00000000-0000-0000-0000-000000000000"
+    assert len(server.calls) == 1
+
+
+def test_client_auth_econnect_web_login_forbidden(server):
+    """Should raise an exception if credentials are not valid in the web login form."""
+    server.add(
+        responses.POST, "https://webservice.elmospa.com/domain", body="Username or Password is invalid", status=403
+    )
+    client = ElmoClient(base_url=ELMO_E_CONNECT, domain="domain")
+    # Test
+    with pytest.raises(CredentialError):
+        client.auth("test", "test")
+    assert client._session_id is None
+    assert client._panel is None
+    assert len(server.calls) == 1
+
+
 def test_client_poll_with_changes(server):
     """Should return a dict with updated states."""
     html = """

@@ -1,4 +1,13 @@
-from elmo.utils import _camel_to_snake_case, _sanitize_session_id
+import pytest
+
+from elmo.api.exceptions import ParseError
+from elmo.utils import (
+    _camel_to_snake_case,
+    _sanitize_session_id,
+    extract_session_id_from_html,
+)
+
+from .fixtures.responses import STATUS_PAGE
 
 
 def test_sanitize_identifier():
@@ -64,3 +73,16 @@ def test_camel_to_snake_case_cache(mocker):
     _camel_to_snake_case("camelCase")
     _camel_to_snake_case("camelCase")
     assert mocked_sub.call_count == 4
+
+
+def test_extract_session_id_from_html():
+    """Ensure the session ID is extracted from e-Connect status page."""
+    html_content = STATUS_PAGE
+    assert extract_session_id_from_html(html_content) == "f8h23b4e-7a9f-4d3f-9b08-2769263ee33c"
+
+
+def test_extract_session_id_from_html_no_session_id():
+    """Ensure an error is raised when the session ID is not found in the HTML content."""
+    html_content = STATUS_PAGE.replace("var sessionId = 'f8h23b4e-7a9f-4d3f-9b08-2769263ee33c';", "")
+    with pytest.raises(ParseError):
+        extract_session_id_from_html(html_content)
