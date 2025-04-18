@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   econnect:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Check out repository code
@@ -25,7 +25,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Upgrade pip and install required tools
         run: |
