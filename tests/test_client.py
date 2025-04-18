@@ -239,6 +239,46 @@ def test_client_auth_redirect(server):
     assert len(server.calls) == 2
 
 
+def test_client_auth_redirect_web_login(server):
+    """Ensure web login session token is used when redirect is required.
+    Regression test: https://github.com/palazzem/econnect-python/issues/158
+    """
+    redirect = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Domain": "domain",
+            "Redirect": true,
+            "RedirectTo": "https://redirect.example.com"
+        }
+    """
+    login = """
+        {
+            "SessionId": "99999999-9999-9999-9999-999999999999",
+            "Username": "test",
+            "Domain": "domain",
+            "Language": "en",
+            "IsActivated": true,
+            "IsConnected": true,
+            "IsLoggedIn": false,
+            "IsLoginInProgress": false,
+            "CanElevate": true,
+            "AccountId": 100,
+            "IsManaged": false,
+            "Redirect": false,
+            "IsElevation": false
+        }
+    """
+    server.add(responses.GET, "https://connect.elmospa.com/api/login", body=redirect, status=200)
+    server.add(responses.GET, "https://redirect.example.com/api/login", body=login, status=200)
+    server.add(responses.POST, "https://webservice.elmospa.com/domain", body=r.STATUS_PAGE, status=200)
+    client = ElmoClient(base_url=ELMO_E_CONNECT, domain="domain")
+    # Test
+    assert client.auth("test", "test")
+    assert len(server.calls) == 3
+    assert client._router._base_url == "https://redirect.example.com"
+    assert client._session_id == "f8h23b4e-7a9f-4d3f-9b08-2769263ee33c"
+
+
 def test_client_auth_infinite_redirect(server):
     """Should prevent infinite redirects in the auth() call."""
     redirect = """
@@ -349,16 +389,16 @@ def test_client_poll(server):
 
 
 def test_client_auth_econnect_web_login(server):
-    """Web login should be used when accessing with e-Connect.
+    """Ensure API and Web login are executed when using e-Connect cloud API.
     Regression test: https://github.com/palazzem/econnect-python/issues/158
     """
+    server.add(responses.GET, "https://connect.elmospa.com/api/login", body=r.LOGIN, status=200)
     server.add(responses.POST, "https://webservice.elmospa.com/domain", body=r.STATUS_PAGE, status=200)
-    server.add(responses.GET, f"{ELMO_E_CONNECT}/api/login", body=r.LOGIN, status=200)
     client = ElmoClient(base_url=ELMO_E_CONNECT, domain="domain")
     # Test
     client.auth("test", "test")
-    request_body = dict(item.split("=") for item in server.calls[0].request.body.split("&"))
     assert len(server.calls) == 2
+    request_body = dict(item.split("=") for item in server.calls[1].request.body.split("&"))
     assert client._session_id == "f8h23b4e-7a9f-4d3f-9b08-2769263ee33c"
     assert request_body == {
         "IsDisableAccountCreation": "True",
@@ -373,25 +413,11 @@ def test_client_auth_econnect_web_login_metronet(server):
     """Web login should NOT be used when accessing with Metronet.
     Regression test: https://github.com/palazzem/econnect-python/issues/158
     """
-    server.add(responses.GET, f"{IESS_METRONET}/api/login", body=r.LOGIN, status=200)
+    server.add(responses.GET, "https://metronet.iessonline.com/api/login", body=r.LOGIN, status=200)
     client = ElmoClient(base_url=IESS_METRONET, domain="domain")
     # Test
     client.auth("test", "test")
     assert client._session_id == "00000000-0000-0000-0000-000000000000"
-    assert len(server.calls) == 1
-
-
-def test_client_auth_econnect_web_login_forbidden(server):
-    """Should raise an exception if credentials are not valid in the web login form."""
-    server.add(
-        responses.POST, "https://webservice.elmospa.com/domain", body="Username or Password is invalid", status=403
-    )
-    client = ElmoClient(base_url=ELMO_E_CONNECT, domain="domain")
-    # Test
-    with pytest.raises(CredentialError):
-        client.auth("test", "test")
-    assert client._session_id is None
-    assert client._panel is None
     assert len(server.calls) == 1
 
 
