@@ -239,7 +239,7 @@ def test_client_auth_redirect(server):
     assert len(server.calls) == 2
 
 
-def test_client_auth_redirect_web_login(server):
+def test_client_auth_redirect_web_login_econnect(server):
     """Ensure web login session token is used when redirect is required.
     Regression test: https://github.com/palazzem/econnect-python/issues/158
     """
@@ -272,6 +272,46 @@ def test_client_auth_redirect_web_login(server):
     server.add(responses.GET, "https://redirect.example.com/api/login", body=login, status=200)
     server.add(responses.POST, "https://webservice.elmospa.com/domain", body=r.STATUS_PAGE, status=200)
     client = ElmoClient(base_url=ELMO_E_CONNECT, domain="domain")
+    # Test
+    assert client.auth("test", "test")
+    assert len(server.calls) == 3
+    assert client._router._base_url == "https://redirect.example.com"
+    assert client._session_id == "f8h23b4e-7a9f-4d3f-9b08-2769263ee33c"
+
+
+def test_client_auth_redirect_web_login_metronet(server):
+    """Ensure web login session token is used when redirect is required.
+    Regression test: https://github.com/palazzem/econnect-python/issues/168
+    """
+    redirect = """
+        {
+            "SessionId": "00000000-0000-0000-0000-000000000000",
+            "Domain": "domain",
+            "Redirect": true,
+            "RedirectTo": "https://redirect.example.com"
+        }
+    """
+    login = """
+        {
+            "SessionId": "99999999-9999-9999-9999-999999999999",
+            "Username": "test",
+            "Domain": "domain",
+            "Language": "en",
+            "IsActivated": true,
+            "IsConnected": true,
+            "IsLoggedIn": false,
+            "IsLoginInProgress": false,
+            "CanElevate": true,
+            "AccountId": 100,
+            "IsManaged": false,
+            "Redirect": false,
+            "IsElevation": false
+        }
+    """
+    server.add(responses.GET, "https://metronet.iessonline.com/api/login", body=redirect, status=200)
+    server.add(responses.GET, "https://redirect.example.com/api/login", body=login, status=200)
+    server.add(responses.POST, "https://metronet.iessonline.com/domain", body=r.STATUS_PAGE, status=200)
+    client = ElmoClient(base_url=IESS_METRONET, domain="domain")
     # Test
     assert client.auth("test", "test")
     assert len(server.calls) == 3
@@ -409,16 +449,67 @@ def test_client_auth_econnect_web_login(server):
     }
 
 
-def test_client_auth_econnect_web_login_metronet(server):
-    """Web login should NOT be used when accessing with Metronet.
+def test_client_auth_econnect_web_login_with_default_domain(server):
+    """Ensure API and Web login are executed when using e-Connect cloud API.
     Regression test: https://github.com/palazzem/econnect-python/issues/158
     """
+    server.add(responses.GET, "https://connect.elmospa.com/api/login", body=r.LOGIN, status=200)
+    server.add(responses.POST, "https://webservice.elmospa.com/", body=r.STATUS_PAGE, status=200)
+    client = ElmoClient(base_url=ELMO_E_CONNECT, domain="default")
+    # Test
+    client.auth("test", "test")
+    assert len(server.calls) == 2
+    request_body = dict(item.split("=") for item in server.calls[1].request.body.split("&"))
+    assert client._session_id == "f8h23b4e-7a9f-4d3f-9b08-2769263ee33c"
+    assert request_body == {
+        "IsDisableAccountCreation": "True",
+        "IsAllowThemeChange": "True",
+        "UserName": "test",
+        "Password": "test",
+        "RememberMe": "false",
+    }
+
+
+def test_client_auth_econnect_web_login_metronet(server):
+    """Web login must be used when accessing with Metronet.
+    Regression test: https://github.com/palazzem/econnect-python/issues/186
+    """
     server.add(responses.GET, "https://metronet.iessonline.com/api/login", body=r.LOGIN, status=200)
+    server.add(responses.POST, "https://metronet.iessonline.com/domain", body=r.STATUS_PAGE, status=200)
     client = ElmoClient(base_url=IESS_METRONET, domain="domain")
     # Test
     client.auth("test", "test")
-    assert client._session_id == "00000000-0000-0000-0000-000000000000"
-    assert len(server.calls) == 1
+    assert len(server.calls) == 2
+    request_body = dict(item.split("=") for item in server.calls[1].request.body.split("&"))
+    assert client._session_id == "f8h23b4e-7a9f-4d3f-9b08-2769263ee33c"
+    assert request_body == {
+        "IsDisableAccountCreation": "True",
+        "IsAllowThemeChange": "True",
+        "UserName": "test",
+        "Password": "test",
+        "RememberMe": "false",
+    }
+
+
+def test_client_auth_metronet_web_login_with_default_domain(server):
+    """Web login must be used when accessing with Metronet.
+    Regression test: https://github.com/palazzem/econnect-python/issues/186
+    """
+    server.add(responses.GET, "https://metronet.iessonline.com/api/login", body=r.LOGIN, status=200)
+    server.add(responses.POST, "https://metronet.iessonline.com/", body=r.STATUS_PAGE, status=200)
+    client = ElmoClient(base_url=IESS_METRONET, domain="default")
+    # Test
+    client.auth("test", "test")
+    assert len(server.calls) == 2
+    request_body = dict(item.split("=") for item in server.calls[1].request.body.split("&"))
+    assert client._session_id == "f8h23b4e-7a9f-4d3f-9b08-2769263ee33c"
+    assert request_body == {
+        "IsDisableAccountCreation": "True",
+        "IsAllowThemeChange": "True",
+        "UserName": "test",
+        "Password": "test",
+        "RememberMe": "false",
+    }
 
 
 def test_client_poll_with_changes(server):
