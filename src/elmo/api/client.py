@@ -9,7 +9,12 @@ from requests.exceptions import HTTPError
 
 from .. import query as q
 from ..__about__ import __version__
-from ..systems import ELMO_E_CONNECT
+from ..systems import (
+    ELMO_E_CONNECT,
+    ELMO_E_CONNECT_WEB_LOGIN,
+    IESS_METRONET,
+    IESS_METRONET_WEB_LOGIN,
+)
 from ..utils import (
     _camel_to_snake_case,
     _sanitize_session_id,
@@ -53,14 +58,25 @@ class ElmoClient:
         self._session = Session()
         self._session_id = session_id
         self._panel = None
-        self._web_login = base_url == ELMO_E_CONNECT
         self._lock = Lock()
+
+        # Web login is required for E-Connect and Metronet because, at the moment, the
+        # Cloud API login does not register the client session in their backend, causing
+        # updates to be not received by the client during the long-polling `has_updates`.
+        domain_url = "" if self._domain == "default" else self._domain
+        self._web_login = base_url in [ELMO_E_CONNECT, IESS_METRONET]
+        if base_url == ELMO_E_CONNECT:
+            self._web_login_url = f"{ELMO_E_CONNECT_WEB_LOGIN}/{domain_url}"
+        elif base_url == IESS_METRONET:
+            self._web_login_url = f"{IESS_METRONET_WEB_LOGIN}/{domain_url}"
+        else:
+            self._web_login_url = None
 
         # Debug
         _LOGGER.debug(f"Client | Library version: {__version__}")
         _LOGGER.debug(f"Client | Router: {self._router._base_url}")
         _LOGGER.debug(f"Client | Domain: {self._domain}")
-        _LOGGER.debug(f"Client | Web login: {self._web_login}")
+        _LOGGER.debug(f"Client | Web login URL: {self._web_login_url}")
 
     def auth(self, username, password):
         """Authenticate the client and retrieves the access token. This method uses
@@ -104,11 +120,8 @@ class ElmoClient:
             data = redirect.json()
             self._session_id = data["SessionId"]
 
+        # Retrieve the session_id using the web login form
         if self._web_login:
-            # Web login is required for Elmo E-Connect because, at the moment, the
-            # e-Connect Cloud API login does not register the client session in the backend.
-            # This prevents the client from attaching to server events (e.g. long polling updates).
-            web_login_url = f"https://webservice.elmospa.com/{self._domain}"
             payload = {
                 "IsDisableAccountCreation": "True",
                 "IsAllowThemeChange": "True",
@@ -116,7 +129,7 @@ class ElmoClient:
                 "Password": password,
                 "RememberMe": "false",
             }
-            web_response = self._session.post(web_login_url, data=payload)
+            web_response = self._session.post(self._web_login_url, data=payload)
             web_response.raise_for_status()
             self._session_id = extract_session_id_from_html(web_response.text)
 
