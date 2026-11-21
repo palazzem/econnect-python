@@ -1,5 +1,12 @@
 # E-connect Python API
 
+> [!WARNING]
+> **This library is deprecated and no longer developed.**
+> Its only purpose was to serve the [e-Connect/Metronet Home Assistant integration](https://github.com/palazzem/ha-econnect-alarm),
+> so the client is now part of that repository, under `custom_components/econnect_metronet/api/v1/`.
+> `econnect-python` stays available on PyPI at version 0.14.1, unchanged. Open new issues and pull requests
+> in [ha-econnect-alarm](https://github.com/palazzem/ha-econnect-alarm).
+
 [![Testing](https://github.com/palazzem/econnect-python/actions/workflows/testing.yaml/badge.svg)](https://github.com/palazzem/econnect-python/actions/workflows/testing.yaml)
 [![Linting](https://github.com/palazzem/econnect-python/actions/workflows/linting.yaml/badge.svg)](https://github.com/palazzem/econnect-python/actions/workflows/linting.yaml)
 [![Building](https://github.com/palazzem/econnect-python/actions/workflows/building.yaml/badge.svg)](https://github.com/palazzem/econnect-python/actions/workflows/building.yaml)
